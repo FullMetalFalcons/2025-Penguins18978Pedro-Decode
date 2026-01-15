@@ -18,10 +18,10 @@ public class Constants {
 
     final static double lbPerKg = 2.205;
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(20 /lbPerKg)
-            .forwardZeroPowerAcceleration(-37.939)
+            .mass(22 /lbPerKg)
+            .forwardZeroPowerAcceleration(-36.834)
             .lateralZeroPowerAcceleration(-59.256)
-            .translationalPIDFCoefficients(new PIDFCoefficients(
+            /*.translationalPIDFCoefficients(new PIDFCoefficients(
                     0.08,
                     0,
                     0.01,
@@ -37,7 +37,7 @@ public class Constants {
                     0.001,
                     0.6,
                     0.05
-            ));
+            ))*/;
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
@@ -49,17 +49,17 @@ public class Constants {
             .leftRearMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightRearMotorDirection(DcMotorSimple.Direction.REVERSE)
-            .xVelocity(57.671)
-            .yVelocity(45.608);
+            .xVelocity(67.243)
+            .yVelocity(27.868);
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
-            .forwardPodY(-3)
-            .strafePodX(-2)
+            .forwardPodY(0)
+            .strafePodX(-6.75)
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("pinpoint")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
-            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
-            .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
+            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
+            .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
     public static PathConstraints pathConstraints = new PathConstraints(
             0.99,

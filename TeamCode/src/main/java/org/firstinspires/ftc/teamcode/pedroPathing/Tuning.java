@@ -17,6 +17,7 @@ import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.ErrorCalculator;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.ftc.drivetrains.Mecanum;
 import com.pedropathing.geometry.*;
 import com.pedropathing.math.*;
 import com.pedropathing.paths.*;
@@ -24,6 +25,7 @@ import com.pedropathing.telemetry.SelectableOpMode;
 import com.pedropathing.util.*;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -155,13 +157,24 @@ class LocalizationTest extends OpMode {
      */
     @Override
     public void loop() {
-        follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
+        if (gamepad1.right_bumper) {
+            follower.setTeleOpDrive(0, 1, 0, true);
+        } else {
+            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
+        }
         follower.update();
+
+        List<DcMotorEx> motors = ((Mecanum) follower.drivetrain).getMotors();
+        String[] motorNames = {"LF", "LB", "RF", "RB"};
 
         telemetryM.debug("x:" + follower.getPose().getX());
         telemetryM.debug("y:" + follower.getPose().getY());
         telemetryM.debug("heading:" + follower.getPose().getHeading());
         telemetryM.debug("total heading:" + follower.getTotalHeading());
+        for (int i=0; i<motorNames.length; i++) {
+            telemetryM.addData(motorNames[i] + " Pow", motors.get(i).getPower());
+            telemetryM.addData(motorNames[i] + " Vel", motors.get(i).getVelocity());
+        }
         telemetryM.update(telemetry);
 
         draw();
@@ -641,6 +654,7 @@ class ForwardZeroPowerAccelerationTuner extends OpMode {
  * @author Baron Henderson - 20077 The Indubitables
  * @version 1.0, 3/13/2024
  */
+@Configurable
 class LateralZeroPowerAccelerationTuner extends OpMode {
     private final ArrayList<Double> accelerations = new ArrayList<>();
     public static double VELOCITY = 30;
