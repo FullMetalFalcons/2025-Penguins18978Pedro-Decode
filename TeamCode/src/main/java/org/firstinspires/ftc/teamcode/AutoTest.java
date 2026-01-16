@@ -13,7 +13,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 @Autonomous
 public class AutoTest extends OpMode {
 
-    public Follower follower; // Pedro Pathing follower instance
+    public Follower follower; // Pedro Pathinsg follower instance
     private int pathState; // Current autonomous path state (state machine)
     private Paths paths; // Paths defined in the Paths class
 
