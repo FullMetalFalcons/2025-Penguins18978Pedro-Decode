@@ -34,7 +34,7 @@ public class CompetitionTeleOp extends OpMode {
     final double FEEDER_UP = 0.55;
 
     // Declare and/or initialize other variables
-    int velocityRPM = 3500;
+    int velocityRPM = 3000;
 
     boolean intakeIsActive;
     double headingFieldCentric;
@@ -280,6 +280,7 @@ public class CompetitionTeleOp extends OpMode {
     public TargetHeading ZTargetCalculations() {
         double desiredHeadingDegrees = ratioOfSidesToHeading(goalPos.getX(DistanceUnit.INCH) - robotX,
                                                              goalPos.getY(DistanceUnit.INCH) - robotY);
+        telemetry.addData("Target heading", desiredHeadingDegrees);
         return determineRotationDirection(Math.toDegrees(headingRadians), desiredHeadingDegrees);
     }
 
@@ -325,16 +326,16 @@ public class CompetitionTeleOp extends OpMode {
         // Determine the larger of the two headings
         if (targetHeading > currentCircularHeading) {
             // Subtract the smaller (current) heading from the larger (target) heading
-            //   to find the degrees needed to turn to get to the target going clockwise
-            clockwiseDegrees = targetHeading - currentCircularHeading;
-            // Find the alternative
-            counterclockwiseDegrees = 360 - clockwiseDegrees;
-        } else {
-            // Subtract the smaller (target) heading from the larger (current) heading
-            //   to find the degrees needed to turn to get to the target doing counterclockwise
-            counterclockwiseDegrees = currentCircularHeading - targetHeading;
+            //   to find the degrees needed to turn to get to the target going counterclockwise
+            counterclockwiseDegrees = targetHeading - currentCircularHeading;
             // Find the alternative
             clockwiseDegrees = 360 - counterclockwiseDegrees;
+        } else {
+            // Subtract the smaller (target) heading from the larger (current) heading
+            //   to find the degrees needed to turn to get to the target doing clockwise
+            clockwiseDegrees = currentCircularHeading - targetHeading;
+            // Find the alternative
+            counterclockwiseDegrees = 360 - clockwiseDegrees;
         }
         // Determine the most efficient direction and return the proper multiplier
         if (clockwiseDegrees < counterclockwiseDegrees) {
