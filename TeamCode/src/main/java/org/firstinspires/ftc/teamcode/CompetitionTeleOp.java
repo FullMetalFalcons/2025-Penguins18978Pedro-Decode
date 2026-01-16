@@ -140,7 +140,10 @@ public class CompetitionTeleOp extends OpMode {
             goalPos = AALocationChooser.chosenGoalPos;
             driverHeadingDegrees = AALocationChooser.chosenDriverHeading;
         }
-        pinpoint.setPosition(startingPos);
+        // Autonomous programs set startingPos to null
+        if (startingPos != null) {
+            pinpoint.setPosition(startingPos);
+        }
     }
 
     // Runs continually after START is pressed and before STOP is pressed
@@ -167,23 +170,7 @@ public class CompetitionTeleOp extends OpMode {
             powerAngular = -gamepad1.right_stick_x;
         }
 
-        // Perform vector math to determine the desired powers for each wheel
-        double powerLF = powerStrafe + powerForward - powerAngular;
-        double powerLB = -powerStrafe + powerForward - powerAngular;
-        double powerRF = -powerStrafe + powerForward + powerAngular;
-        double powerRB = powerStrafe + powerForward + powerAngular;
-
-        // Determine the greatest wheel power and set it to max
-        double max = Math.max(1.0, Math.abs(powerLF));
-        max = Math.max(max, Math.abs(powerRF));
-        max = Math.max(max, Math.abs(powerLB));
-        max = Math.max(max, Math.abs(powerRB));
-
-        // Scale all power variables down to a number between 0 and 1 (so that setPower will accept them)
-        motorLF.setPower(powerLF /max);
-        motorLB.setPower(powerLB /max);
-        motorRF.setPower(powerRF /max);
-        motorRB.setPower(powerRB /max);
+        mecanumDriveCode(powerForward, powerStrafe, powerAngular);
 
 
         // ....... FLYWHEEL CONTROLS .......
@@ -259,6 +246,27 @@ public class CompetitionTeleOp extends OpMode {
         motorRB.setZeroPowerBehavior(behavior);
     }
 
+    public void mecanumDriveCode(double forward, double strafe, double angular) {
+        // Perform vector math to determine the desired powers for each wheel
+        double powerLF = strafe + forward - angular;
+        double powerLB = -strafe + forward - angular;
+        double powerRF = -strafe + forward + angular;
+        double powerRB = strafe + forward + angular;
+
+        // Determine the greatest wheel power and set it to max
+        double max = Math.max(1.0, Math.abs(powerLF));
+        max = Math.max(max, Math.abs(powerRF));
+        max = Math.max(max, Math.abs(powerLB));
+        max = Math.max(max, Math.abs(powerRB));
+
+        // Scale all power variables down to a number between 0 and 1 (so that setPower will accept them)
+        motorLF.setPower(powerLF /max);
+        motorLB.setPower(powerLB /max);
+        motorRF.setPower(powerRF /max);
+        motorRB.setPower(powerRB /max);
+    }
+
+
     public void readFromPinpoint() {
         pinpoint.update();
         headingRadians = pinpoint.getHeading(AngleUnit.RADIANS);
@@ -281,7 +289,7 @@ public class CompetitionTeleOp extends OpMode {
         // Otherwise, the angle can be calculated with trig
         if (Y == 0.0) {
             // Determine which horizontal based on the sign on X
-            freeHeading = (X > 0.0) ? 90.0 : -90.0;
+            freeHeading = (X > 0.0) ? 0.0 : 180.0;
         } else {
             // Calculate the heading
             freeHeading = Math.toDegrees(Math.atan(Y/X));

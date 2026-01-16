@@ -10,13 +10,15 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 @TeleOp
 public class AALocationChooser extends OpMode {
 
-    // Define alliance colors
-    public enum AllianceColor {
-        BLUE,
-        RED
+    // Define starting position names
+    public enum StartingLocation {
+        BLUE_GOAL,
+        BLUE_WALL,
+        RED_GOAL,
+        RED_WALL
     }
 
-    // Define possible starting locations
+    // Define possible starting coordinate positions
     private static final double PEDRO_CENTER = 72;
     public static final Pose2D BLUE_GOAL_STARTING = new Pose2D(DistanceUnit.INCH, PEDRO_CENTER-51, 122,
                                                       AngleUnit.DEGREES, 270+54);
@@ -31,14 +33,14 @@ public class AALocationChooser extends OpMode {
                                                      AngleUnit.DEGREES, 90);
 
     // Define goal positions for Z-Targeting System
-    public static final Pose2D BLUE_GOAL_POS = new Pose2D(DistanceUnit.INCH, 0, 0,
+    public static final Pose2D BLUE_GOAL_POS = new Pose2D(DistanceUnit.INCH, PEDRO_CENTER-62, 137,
                                                           AngleUnit.DEGREES, 0);
-    public static final Pose2D RED_GOAL_POS = new Pose2D(DistanceUnit.INCH, 0, 0,
+    public static final Pose2D RED_GOAL_POS = new Pose2D(DistanceUnit.INCH, PEDRO_CENTER+62, 137,
                                                          AngleUnit.DEGREES, 0);
 
+    public static StartingLocation chosenStartingLocation = StartingLocation.BLUE_GOAL;
     public static Pose2D chosenStartingPos = BLUE_GOAL_STARTING;
     public static Pose2D chosenGoalPos = BLUE_GOAL_POS;
-    public static AllianceColor chosenColor = AllianceColor.BLUE;
     public static double chosenDriverHeading = 180;
     private int locationNumber = 1;
 
@@ -81,28 +83,28 @@ public class AALocationChooser extends OpMode {
         switch (locationNumber) {
             case 1:
                 chosenStartingPos = BLUE_GOAL_STARTING;
-                chosenColor = AllianceColor.BLUE;
+                chosenStartingLocation = StartingLocation.BLUE_GOAL;
                 telemetry.addLine("Blue Goal successfully selected!");
                 break;
             case 2:
                 chosenStartingPos = BLUE_WALL_STARTING;
-                chosenColor = AllianceColor.BLUE;
+                chosenStartingLocation = StartingLocation.BLUE_WALL;
                 telemetry.addLine("Blue Wall successfully selected!");
                 break;
             case 3:
                 chosenStartingPos = RED_GOAL_STARTING;
-                chosenColor = AllianceColor.RED;
+                chosenStartingLocation = StartingLocation.RED_GOAL;
                 telemetry.addLine("Red Goal successfully selected!");
                 break;
             case 4:
                 chosenStartingPos = RED_WALL_STARTING;
-                chosenColor = AllianceColor.RED;
+                chosenStartingLocation = StartingLocation.RED_WALL;
                 telemetry.addLine("Red Wall successfully selected!");
                 break;
         }
 
         // Setup goal and driver location based on alliance color
-        if (chosenColor == AllianceColor.BLUE) {
+        if (chosenStartingLocation == StartingLocation.BLUE_GOAL || chosenStartingLocation == StartingLocation.BLUE_WALL) {
             chosenGoalPos = BLUE_GOAL_POS;
             chosenDriverHeading = 180;
         } else {
