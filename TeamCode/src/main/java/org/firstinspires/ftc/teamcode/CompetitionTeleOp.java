@@ -42,19 +42,34 @@ public class CompetitionTeleOp extends OpMode {
     double robotX;
     double robotY;
 
-    boolean isRed;
     double driverHeadingDegrees;
-
-    double startingHeadingDegrees;
     Pose2D startingPos;
+    Pose2D goalPos;
 
-    public static int number = 0;
+
+    // Custom class to store information for Z-Target Drive
+    public class TargetHeading{
+        // Instance variables
+        private double directionMultiplier;
+        private double errorDegrees;
+        // Constructor
+        public TargetHeading(double directionMultiplier, double errorDegrees) {
+            this.directionMultiplier = directionMultiplier;
+            this.errorDegrees = errorDegrees;
+        }
+        /** Get the direction multiplier, which is either +1.0 or -1.0 */
+        public double getDirection() { return directionMultiplier; }
+        /** Get the error degrees, which is how far the robot needs to turn to get to the target heading */
+        public double getError() { return errorDegrees; }
+    }
+
+    TargetHeading towardsGoalHeading;
+
+
 
     // Runs once when INIT is pressed
     @Override
     public void init() {
-
-        number ++;
 
         // Setup drive motors based on constants file
         motorLF = hardwareMap.get(DcMotorEx.class, Constants.driveConstants.leftFrontMotorName);
@@ -106,27 +121,25 @@ public class CompetitionTeleOp extends OpMode {
     @Override
     public void init_loop() {
 
-        if (gamepad1.aWasPressed()) {
-            isRed = !isRed;
-        }
-        driverHeadingDegrees = isRed ? 0 : 180;
+        //
 
-        if (gamepad1.bWasPressed()) {
-            startingHeadingDegrees = Math.toDegrees(Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x));
-            startingHeadingDegrees = modPositive(startingHeadingDegrees, 360);
-        }
-
-        telemetry.addData("Robot Heading", startingHeadingDegrees);
-        telemetry.addData("Driver Heading", driverHeadingDegrees);
-        telemetry.update();
     }
 
     // Runs once when START is pressed
     @Override
     public void start() {
 
-        startingPos = new Pose2D(DistanceUnit.INCH, 0, 0,
-                                 AngleUnit.DEGREES, startingHeadingDegrees);
+        // Import robot starting location from the Location Chooser, unless B is pressed (override for practice)
+        if (gamepad1.b) {
+            startingPos = new Pose2D(DistanceUnit.INCH, 0, 0,
+                                     AngleUnit.DEGREES, 0);
+            goalPos = startingPos;
+            driverHeadingDegrees = 0;
+        } else {
+            startingPos = AALocationChooser.chosenStartingPos;
+            goalPos = AALocationChooser.chosenGoalPos;
+            driverHeadingDegrees = AALocationChooser.chosenDriverHeading;
+        }
         pinpoint.setPosition(startingPos);
     }
 
@@ -140,11 +153,19 @@ public class CompetitionTeleOp extends OpMode {
         // Set the desired powers based on joystick inputs (-1 to 1)
         double desiredForward = -gamepad1.left_stick_y;
         double desiredStrafe = gamepad1.left_stick_x;
-        double powerAngular = -gamepad1.right_stick_x;
+        double powerAngular;
 
         // Modify powers based on robot heading for field-centric drive
         double powerForward = (desiredForward * Math.cos(headingFieldCentric)) - (desiredStrafe * Math.sin(headingFieldCentric));
         double powerStrafe = (desiredStrafe * Math.cos(headingFieldCentric)) + (desiredForward * Math.sin(headingFieldCentric));
+
+        if (gamepad1.a) {
+            // Set target heading based on the goal and its position compared to the robot
+            towardsGoalHeading = ZTargetCalculations();
+            powerAngular = towardsGoalHeading.getDirection() * towardsGoalHeading.getError()/30.0;
+        } else {
+            powerAngular = -gamepad1.right_stick_x;
+        }
 
         // Perform vector math to determine the desired powers for each wheel
         double powerLF = powerStrafe + powerForward - powerAngular;
@@ -166,14 +187,14 @@ public class CompetitionTeleOp extends OpMode {
 
 
         // ....... FLYWHEEL CONTROLS .......
-        if (gamepad2.left_trigger > 0.5) {
+        if (gamepad2.right_trigger > 0.5) {
             // Launch balls
             launchL.setVelocity(velocityRPM * RPM_TO_TPS);
             launchR.setVelocity(velocityRPM * RPM_TO_TPS);
-        } else if (gamepad2.right_trigger > 0.5) {
+        } else if (gamepad2.left_trigger > 0.5) {
             // Reverse wheels to bring balls back in if necessary
-            launchL.setVelocity(-600 * RPM_TO_TPS);
-            launchR.setVelocity(-600 * RPM_TO_TPS);
+            launchL.setVelocity(-2000 * RPM_TO_TPS);
+            launchR.setVelocity(-2000 * RPM_TO_TPS);
         } else {
             launchL.setVelocity(0);
             launchR.setVelocity(0);
@@ -195,7 +216,7 @@ public class CompetitionTeleOp extends OpMode {
         if (gamepad1.left_bumper) {
             // Left bumper overrides to outtake (in case of emergency)
             intake.setPower(-1);
-        } else if (intakeIsActive) {
+        } else if (intakeIsActive || gamepad2.left_bumper) {
             // Intake runs if it is toggled on
             intake.setPower(1);
         } else {
@@ -219,8 +240,7 @@ public class CompetitionTeleOp extends OpMode {
         telemetry.addData("Y Position", robotY);
         telemetry.addData("Heading", Math.toDegrees(headingRadians));
         telemetry.addData("Relative heading", Math.toDegrees(headingFieldCentric));
-        telemetry.addData("Static Number", number);
-        telemetry.addData("Actual Velocity", launchR.getVelocity());
+        telemetry.addData("Actual Velocity", launchR.getVelocity() / RPM_TO_TPS);
         telemetry.update();
 
     }
@@ -245,6 +265,75 @@ public class CompetitionTeleOp extends OpMode {
         headingFieldCentric = headingRadians - Math.toRadians(driverHeadingDegrees);
         robotX = pinpoint.getPosX(DistanceUnit.INCH);
         robotY = pinpoint.getPosY(DistanceUnit.INCH);
+    }
+
+
+    // ....... Z-TARGETING METHODS .......
+    public TargetHeading ZTargetCalculations() {
+        double desiredHeadingDegrees = ratioOfSidesToHeading(goalPos.getX(DistanceUnit.INCH) - robotX,
+                                                             goalPos.getY(DistanceUnit.INCH) - robotY);
+        return determineRotationDirection(Math.toDegrees(headingRadians), desiredHeadingDegrees);
+    }
+
+    public double ratioOfSidesToHeading(double X, double Y) {
+        double freeHeading = 0.0;
+        // If Y is zero, then the angle is purely horizontal
+        // Otherwise, the angle can be calculated with trig
+        if (Y == 0.0) {
+            // Determine which horizontal based on the sign on X
+            freeHeading = (X > 0.0) ? 90.0 : -90.0;
+        } else {
+            // Calculate the heading
+            freeHeading = Math.toDegrees(Math.atan(Y/X));
+        }
+        /*
+                                 With inverse tangent, (+X, +Y) and (-X, -Y) are indistinguishable
+     135        90       45
+            I   |   II
+          -X,+Y | +X,+Y               inverse tangent accounts for quadrants I and II
+     180 -------|-------  0      but can't tell the different between those and quadrants III and IV
+          -X,-Y | +X,-Y
+           III  |   IV           so, if Y is negative (quad III or IV), then add 180 degrees to
+     225       270      315        the calculated angle
+
+        */
+        if (Y < 0.0) {
+            freeHeading += 180.0;
+        } else if (X < 0.0) {
+            // Add additional code for quad I to remove all negative values
+            freeHeading += 360;
+        }
+
+        // Return the final calculated heading
+        return freeHeading;
+    }
+
+    public TargetHeading determineRotationDirection(double current, double target) {
+        double currentCircularHeading = modPositive(current, 360);
+        double targetHeading = modPositive(target, 360);
+        double clockwiseDegrees;
+        double counterclockwiseDegrees;
+
+        // Determine the larger of the two headings
+        if (targetHeading > currentCircularHeading) {
+            // Subtract the smaller (current) heading from the larger (target) heading
+            //   to find the degrees needed to turn to get to the target going clockwise
+            clockwiseDegrees = targetHeading - currentCircularHeading;
+            // Find the alternative
+            counterclockwiseDegrees = 360 - clockwiseDegrees;
+        } else {
+            // Subtract the smaller (target) heading from the larger (current) heading
+            //   to find the degrees needed to turn to get to the target doing counterclockwise
+            counterclockwiseDegrees = currentCircularHeading - targetHeading;
+            // Find the alternative
+            clockwiseDegrees = 360 - counterclockwiseDegrees;
+        }
+        // Determine the most efficient direction and return the proper multiplier
+        if (clockwiseDegrees < counterclockwiseDegrees) {
+            return new TargetHeading(-1.0, Math.abs(clockwiseDegrees));
+        } else {
+            return new TargetHeading(1.0, Math.abs(counterclockwiseDegrees));
+        }
     }
 
     // Performs a mod operation but ensures the result will be positive
