@@ -90,8 +90,8 @@ public class CompetitionTeleOp extends OpMode {
         launchL = (DcMotorEx) hardwareMap.dcMotor.get("launchL");
         launchR = (DcMotorEx) hardwareMap.dcMotor.get("launchR");
         feeder = hardwareMap.servo.get("feeder");
-        //light1 = hardwareMap.servo.get("light1");
-        //light1 = hardwareMap.servo.get("light2");
+        light1 = hardwareMap.servo.get("light1");
+        light1 = hardwareMap.servo.get("light2");
 
         launchR.setDirection(DcMotorSimple.Direction.REVERSE);
 
@@ -236,7 +236,7 @@ public class CompetitionTeleOp extends OpMode {
         }
 
         // ....... LED LIGHT CODE .......
-        //indicatorLightCode();
+        indicatorLightCode();
 
 
 
@@ -371,6 +371,7 @@ public class CompetitionTeleOp extends OpMode {
         return ((number % divisor) + divisor) % divisor;
     }
 
+    // ....... LED LIGHT COLOR SELECTION LOGIC ........
     public void indicatorLightCode() {
 
         // Set the light color based on state
