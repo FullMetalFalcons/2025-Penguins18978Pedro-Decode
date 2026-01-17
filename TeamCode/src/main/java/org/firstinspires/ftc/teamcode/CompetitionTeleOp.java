@@ -19,7 +19,7 @@ public class CompetitionTeleOp extends OpMode {
     // Declare motors, servos, sensors, imus, etc.
     DcMotorEx motorLF, motorRF, motorLB, motorRB, intake, launchL, launchR;
     GoBildaPinpointDriver pinpoint;
-    Servo feeder, Light;
+    Servo feeder, Light1, Light2;
 
     // Create constants
     final double TICKS_PER_ROTATION = 28;
@@ -364,11 +364,13 @@ public class CompetitionTeleOp extends OpMode {
         if (!inPosition && gamepad1.backWasPressed()) {
             if (isBlue) {
                 isBlue = false;
-                Light.setPosition(LED_RED);
+                Light1.setPosition(LED_RED);
+                Light2.setPosition(LED_RED);
             }
             if (!isBlue) {
                 isBlue = true;
-                Light.setPosition(LED_BLUE);
+                Light1.setPosition(LED_BLUE);
+                Light2.setPosition(LED_BLUE);
 
             }
         }
@@ -380,7 +382,8 @@ public class CompetitionTeleOp extends OpMode {
 
 
         if (inPosition) {
-            Light.setPosition(LED_GREEN);
+            Light1.setPosition(LED_GREEN);
+            Light2.setPosition(LED_GREEN);
         }
     }
 
