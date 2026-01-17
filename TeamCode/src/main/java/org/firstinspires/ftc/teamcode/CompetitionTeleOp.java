@@ -50,9 +50,11 @@ public class CompetitionTeleOp extends OpMode {
     public final double LED_RED = 0.279;
     public final double LED_BLUE = 0.611;
     public final double LED_GREEN = 0.5;
+    public final double LED_YELLOW = 0.38;
     double lightColor;
     public boolean isBlue;
     public boolean inPosition = false;
+    public boolean inPositionPark = false;
 
 
     // Custom class to store information for Z-Target Drive
@@ -377,7 +379,11 @@ public class CompetitionTeleOp extends OpMode {
         // Set the light color based on state
         if (inPosition) {
             lightColor = LED_GREEN;
-        } else {
+        }
+        else if (inPositionPark) {
+           lightColor = LED_YELLOW;
+        }
+        else {
             if (isBlue) {
                 lightColor = LED_BLUE;
             } else {
@@ -394,13 +400,24 @@ public class CompetitionTeleOp extends OpMode {
 
         // Determine whether the robot is in launching position (only red for now)
         //X Center: 35, Y Center: 38
-        if (robotX > 30 && robotX < 40 && !isBlue) {
-            inPosition = robotY < 40 && robotY > 36;
+
+        if (robotX > 30 && robotX < 40 && !isBlue) { // For Parking
+            inPositionPark = robotY < 40 && robotY > 36;
+
         }
-        else if (robotX > 105 && robotX < 115 && isBlue) {
-            inPosition = robotY < 40 && robotY > 36;
+        else if (robotX > 105 && robotX < 115 && isBlue) { // For Parking
+            inPositionPark = robotY < 40 && robotY > 36;
+        }
+
+        else if (robotX > 25 && robotX < 35 && isBlue) { // Blue Shooting
+            inPosition = robotY > 115 && robotY < 125;
+        }
+
+        else if (robotX > 115 && robotX < 125 && !isBlue) { // Red Shooting
+            inPosition = robotY > 115 && robotY < 125;
         }
         else {
+            inPositionPark = false;
             inPosition = false;
         }
     }
