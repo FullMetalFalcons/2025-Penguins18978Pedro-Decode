@@ -91,7 +91,7 @@ public class CompetitionTeleOp extends OpMode {
         launchR = (DcMotorEx) hardwareMap.dcMotor.get("launchR");
         feeder = hardwareMap.servo.get("feeder");
         light1 = hardwareMap.servo.get("light1");
-        light1 = hardwareMap.servo.get("light2");
+        light2 = hardwareMap.servo.get("light2");
 
         launchR.setDirection(DcMotorSimple.Direction.REVERSE);
 
@@ -393,9 +393,14 @@ public class CompetitionTeleOp extends OpMode {
         }
 
         // Determine whether the robot is in launching position (only red for now)
-        if (robotX > 32.5 && robotX < 37.5) {
+        //X Center: 35, Y Center: 38
+        if (robotX > 30 && robotX < 40 && !isBlue) {
             inPosition = robotY < 40 && robotY > 36;
-        } else {
+        }
+        else if (robotX > 105 && robotX < 115 && isBlue) {
+            inPosition = robotY < 40 && robotY > 36;
+        }
+        else {
             inPosition = false;
         }
     }
