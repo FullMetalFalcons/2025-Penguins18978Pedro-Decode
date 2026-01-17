@@ -19,7 +19,7 @@ public class CompetitionTeleOp extends OpMode {
     // Declare motors, servos, sensors, imus, etc.
     DcMotorEx motorLF, motorRF, motorLB, motorRB, intake, launchL, launchR;
     GoBildaPinpointDriver pinpoint;
-    Servo feeder, Light1, Light2;
+    Servo feeder, light1, light2;
 
     // Create constants
     final double TICKS_PER_ROTATION = 28;
@@ -50,7 +50,8 @@ public class CompetitionTeleOp extends OpMode {
     public final double LED_RED = 0.279;
     public final double LED_BLUE = 0.611;
     public final double LED_GREEN = 0.5;
-    public boolean isBlue = true;
+    double lightColor;
+    public boolean isBlue;
     public boolean inPosition = false;
 
 
@@ -89,6 +90,8 @@ public class CompetitionTeleOp extends OpMode {
         launchL = (DcMotorEx) hardwareMap.dcMotor.get("launchL");
         launchR = (DcMotorEx) hardwareMap.dcMotor.get("launchR");
         feeder = hardwareMap.servo.get("feeder");
+        //light1 = hardwareMap.servo.get("light1");
+        //light1 = hardwareMap.servo.get("light2");
 
         launchR.setDirection(DcMotorSimple.Direction.REVERSE);
 
@@ -135,6 +138,14 @@ public class CompetitionTeleOp extends OpMode {
     // Runs once when START is pressed
     @Override
     public void start() {
+
+        // Set the alliance color (for the LED light)
+        if (AALocationChooser.chosenStartingLocation == AALocationChooser.StartingLocation.BLUE_GOAL ||
+                AALocationChooser.chosenStartingLocation == AALocationChooser.StartingLocation.BLUE_WALL) {
+            isBlue = true;
+        } else {
+            isBlue = false;
+        }
 
         // Import robot starting location from the Location Chooser, unless B is pressed (override for practice)
         if (gamepad1.b) {
@@ -224,8 +235,8 @@ public class CompetitionTeleOp extends OpMode {
             feeder.setPosition(FEEDER_DOWN);
         }
 
-        // ....... COLOR CODE .......
-        colors_colors_colors();
+        // ....... LED LIGHT CODE .......
+        //indicatorLightCode();
 
 
 
@@ -316,10 +327,10 @@ public class CompetitionTeleOp extends OpMode {
      225       270      315        the calculated angle
 
         */
-        if (Y < 0.0) {
+        if (X < 0.0) {
             freeHeading += 180.0;
-        } else if (X < 0.0) {
-            // Add additional code for quad I to remove all negative values
+        } else if (Y < 0.0) {
+            // Add additional code for quad IV to remove all negative values
             freeHeading += 360;
         }
 
@@ -360,30 +371,31 @@ public class CompetitionTeleOp extends OpMode {
         return ((number % divisor) + divisor) % divisor;
     }
 
-    public void colors_colors_colors() {
-        if (!inPosition && gamepad1.backWasPressed()) {
-            if (isBlue) {
-                isBlue = false;
-                Light1.setPosition(LED_RED);
-                Light2.setPosition(LED_RED);
-            }
-            if (!isBlue) {
-                isBlue = true;
-                Light1.setPosition(LED_BLUE);
-                Light2.setPosition(LED_BLUE);
+    public void indicatorLightCode() {
 
+        // Set the light color based on state
+        if (inPosition) {
+            lightColor = LED_GREEN;
+        } else {
+            if (isBlue) {
+                lightColor = LED_BLUE;
+            } else {
+                lightColor = LED_RED;
             }
         }
+        light1.setPosition(lightColor);
+        light2.setPosition(lightColor);
 
+        // Toggle alliance color
+        if (gamepad1.backWasPressed()) {
+            isBlue = !isBlue;
+        }
+
+        // Determine whether the robot is in launching position (only red for now)
         if (robotX > 32.5 && robotX < 37.5) {
             inPosition = robotY < 40 && robotY > 36;
-        }
-        else {inPosition = false;}
-
-
-        if (inPosition) {
-            Light1.setPosition(LED_GREEN);
-            Light2.setPosition(LED_GREEN);
+        } else {
+            inPosition = false;
         }
     }
 
