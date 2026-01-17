@@ -401,11 +401,11 @@ public class CompetitionTeleOp extends OpMode {
         // Determine whether the robot is in launching position (only red for now)
         //X Center: 35, Y Center: 38
 
-        if (robotX > 27 && robotX < 37 && !isBlue) { // For Parking red
+        if (robotX > 30 && robotX < 34 && !isBlue) { // For Parking red
             inPositionPark = robotY > 37 && robotY < 47;
 
         }
-        else if (robotX > 95 && robotX < 105 && isBlue) { // For Parking Blue
+        else if (robotX > 98 && robotX < 102 && isBlue) { // For Parking Blue
             inPositionPark = robotY < 40 && robotY > 30;
         }
 
