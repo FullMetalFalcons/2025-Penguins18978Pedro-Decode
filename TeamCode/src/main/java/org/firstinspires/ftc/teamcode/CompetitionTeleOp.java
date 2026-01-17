@@ -5,15 +5,18 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 @TeleOp
+@Configurable
 public class CompetitionTeleOp extends OpMode {
 
     // Declare motors, servos, sensors, imus, etc.
@@ -34,13 +37,17 @@ public class CompetitionTeleOp extends OpMode {
     final double FEEDER_UP = 0.55;
 
     // Declare and/or initialize other variables
-    int velocityRPM = 3000;
+    int velocityRPM = 3200;
+
+    public static double flywheelF = 13.0;
+    public static double flywheelP = 200.0;
 
     boolean intakeIsActive;
     double headingFieldCentric;
     double headingRadians;
     double robotX;
     double robotY;
+    boolean fieldCentricInUse = true;
 
     double driverHeadingDegrees;
     Pose2D startingPos;
@@ -95,7 +102,13 @@ public class CompetitionTeleOp extends OpMode {
         light1 = hardwareMap.servo.get("light1");
         light2 = hardwareMap.servo.get("light2");
 
+        // Set motor properties for the operator motors
         launchR.setDirection(DcMotorSimple.Direction.REVERSE);
+        launchL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        launchR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        // Set flywheel Feedforward and Proportional constants
+        launchL.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(flywheelP,0,0,  flywheelF));
+        launchR.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(flywheelP,0,0,  flywheelF));
 
         // Reverse the motors based on constants file
         motorLF.setDirection(Constants.driveConstants.leftFrontMotorDirection);
@@ -176,12 +189,23 @@ public class CompetitionTeleOp extends OpMode {
         // Set the desired powers based on joystick inputs (-1 to 1)
         double desiredForward = -gamepad1.left_stick_y;
         double desiredStrafe = gamepad1.left_stick_x;
+
+        double powerForward = desiredForward;
+        double powerStrafe = desiredStrafe;
         double powerAngular;
 
         // Modify powers based on robot heading for field-centric drive
-        double powerForward = (desiredForward * Math.cos(headingFieldCentric)) - (desiredStrafe * Math.sin(headingFieldCentric));
-        double powerStrafe = (desiredStrafe * Math.cos(headingFieldCentric)) + (desiredForward * Math.sin(headingFieldCentric));
+        if (fieldCentricInUse) {
+            powerForward = (desiredForward * Math.cos(headingFieldCentric)) - (desiredStrafe * Math.sin(headingFieldCentric));
+            powerStrafe = (desiredStrafe * Math.cos(headingFieldCentric)) + (desiredForward * Math.sin(headingFieldCentric));
+        }
 
+        // Toggle field centric drive in case the Pinpoint errors
+        if (gamepad1.startWasPressed()) {
+            fieldCentricInUse = !fieldCentricInUse;
+        }
+
+        // Z-Target and normal turning code
         if (gamepad1.a) {
             // Set target heading based on the goal and its position compared to the robot
             towardsGoalHeading = ZTargetCalculations();
@@ -250,7 +274,7 @@ public class CompetitionTeleOp extends OpMode {
         telemetry.addData("Y Position", robotY);
         telemetry.addData("Heading", Math.toDegrees(headingRadians));
         telemetry.addData("Relative heading", Math.toDegrees(headingFieldCentric));
-        telemetry.addData("Actual Velocity", launchR.getVelocity() / RPM_TO_TPS);
+        telemetry.addData("Flywheel error", (velocityRPM * RPM_TO_TPS) - launchR.getVelocity());
         telemetry.update();
 
     }
@@ -304,7 +328,8 @@ public class CompetitionTeleOp extends OpMode {
         double desiredHeadingDegrees = ratioOfSidesToHeading(goalPos.getX(DistanceUnit.INCH) - robotX,
                                                              goalPos.getY(DistanceUnit.INCH) - robotY);
         telemetry.addData("Target heading", desiredHeadingDegrees);
-        return determineRotationDirection(Math.toDegrees(headingRadians), desiredHeadingDegrees);
+        // The intake is the front of the robot, so add 180 degrees to point the launcher towards the goal
+        return determineRotationDirection(Math.toDegrees(headingRadians)+180, desiredHeadingDegrees);
     }
 
     public double ratioOfSidesToHeading(double X, double Y) {
@@ -379,11 +404,9 @@ public class CompetitionTeleOp extends OpMode {
         // Set the light color based on state
         if (inPosition) {
             lightColor = LED_GREEN;
-        }
-        else if (inPositionPark) {
+        } else if (inPositionPark) {
            lightColor = LED_YELLOW;
-        }
-        else {
+        } else {
             if (isBlue) {
                 lightColor = LED_BLUE;
             } else {
