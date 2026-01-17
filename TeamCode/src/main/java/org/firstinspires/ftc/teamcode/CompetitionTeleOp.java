@@ -19,7 +19,7 @@ public class CompetitionTeleOp extends OpMode {
     // Declare motors, servos, sensors, imus, etc.
     DcMotorEx motorLF, motorRF, motorLB, motorRB, intake, launchL, launchR;
     GoBildaPinpointDriver pinpoint;
-    Servo feeder;
+    Servo feeder, Light;
 
     // Create constants
     final double TICKS_PER_ROTATION = 28;
@@ -45,6 +45,13 @@ public class CompetitionTeleOp extends OpMode {
     double driverHeadingDegrees;
     Pose2D startingPos;
     Pose2D goalPos;
+
+    // Indicator Light constants
+    public final double LED_RED = 0.279;
+    public final double LED_BLUE = 0.611;
+    public final double LED_GREEN = 0.5;
+    public boolean isBlue = true;
+    public boolean inPosition = false;
 
 
     // Custom class to store information for Z-Target Drive
@@ -217,6 +224,9 @@ public class CompetitionTeleOp extends OpMode {
             feeder.setPosition(FEEDER_DOWN);
         }
 
+        // ....... COLOR CODE .......
+        colors_colors_colors();
+
 
 
 
@@ -348,6 +358,30 @@ public class CompetitionTeleOp extends OpMode {
     // Performs a mod operation but ensures the result will be positive
     public double modPositive(double number, double divisor) {
         return ((number % divisor) + divisor) % divisor;
+    }
+
+    public void colors_colors_colors() {
+        if (!inPosition && gamepad1.backWasPressed()) {
+            if (isBlue) {
+                isBlue = false;
+                Light.setPosition(LED_RED);
+            }
+            if (!isBlue) {
+                isBlue = true;
+                Light.setPosition(LED_BLUE);
+
+            }
+        }
+
+        if (robotX > 32.5 && robotX < 37.5) {
+            inPosition = robotY < 40 && robotY > 36;
+        }
+        else {inPosition = false;}
+
+
+        if (inPosition) {
+            Light.setPosition(LED_GREEN);
+        }
     }
 
 } // end class

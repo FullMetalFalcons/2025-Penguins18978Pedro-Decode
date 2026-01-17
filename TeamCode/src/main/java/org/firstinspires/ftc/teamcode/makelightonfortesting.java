@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -16,6 +17,9 @@ public class makelightonfortesting extends OpMode {
     DcMotorEx motorLF, motorRF, motorLB, motorRB, intake, launchL, launchR;
     Servo Light;
     int velocity;
+
+    public double RobotX;
+    public double RobotY;
 
     // Indicator Light constants
     public final double LED_RED = 0.279;
