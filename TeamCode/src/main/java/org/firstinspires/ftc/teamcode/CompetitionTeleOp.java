@@ -432,11 +432,11 @@ public class CompetitionTeleOp extends OpMode {
             inPositionPark = robotY < 40 && robotY > 30;
         }
 
-        else if (robotX > 25 && robotX < 35 && isBlue) { // Blue Shooting
+        else if (robotX > 22.5 && robotX < 37.5 && isBlue) { // Blue Shooting
             inPosition = robotY > 120 && robotY < 130;
         }
 
-        else if (robotX > 107 && robotX < 117 && !isBlue) { // Red Shooting
+        else if (robotX > 109.5 && robotX < 119.5 && !isBlue) { // Red Shooting
             inPosition = robotY > 115 && robotY < 125;
         }
         else {
