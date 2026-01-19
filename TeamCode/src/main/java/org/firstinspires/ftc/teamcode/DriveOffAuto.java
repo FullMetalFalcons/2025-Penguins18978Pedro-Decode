@@ -13,6 +13,9 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 @Autonomous
 public class DriveOffAuto extends LinearOpMode {
 
+    // NOTE: The following method call is a way to "press STOP" via code:    requestOpModeStop()
+    //   It is not currently used by this file, but it may be at some point
+
     // Declare motors, servos, sensors, imus, etc.
     DcMotorEx motorLF, motorRF, motorLB, motorRB;
     GoBildaPinpointDriver pinpoint;
@@ -63,6 +66,10 @@ public class DriveOffAuto extends LinearOpMode {
         pinpoint.setPosition(AALocationChooser.chosenStartingPos);
         AALocationChooser.chosenStartingPos = null;
 
+
+        // Display the chosen starting location just as confirmation for the drivers
+        telemetry.addData("Location", AALocationChooser.chosenStartingLocation);
+        telemetry.update();
 
         waitForStart();
 
