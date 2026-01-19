@@ -4,37 +4,48 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 
 import com.bylazar.configurables.annotations.Configurable;
-import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.PIDFCoefficients;
-import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
+import com.qualcomm.robotcore.hardware.NormalizedRGBA;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 
-@TeleOp
+@TeleOp(name = "TeleOp", group = "OpModes")
 @Configurable
 public class CompetitionTeleOp extends OpMode {
 
     // Declare motors, servos, sensors, imus, etc.
     DcMotorEx motorLF, motorRF, motorLB, motorRB, intake, launchL, launchR;
     GoBildaPinpointDriver pinpoint;
+    NormalizedColorSensor colorSensor;
     Servo feeder, light1, light2;
+
+    // Create a telemetry manager so that telemetry shows up on the Panels dashboard
+    TelemetryManager telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
 
     // Create constants
     final double TICKS_PER_ROTATION = 28;
-    final double RPM_TO_TPS = TICKS_PER_ROTATION / 60;
+    final double TPS_PER_RPM = TICKS_PER_ROTATION / 60;
     /*
         Rotation       Tick       Minute
         --------  *  --------  *  ------
          Minute      Rotation     Second
      */
 
-    final double FEEDER_DOWN = 0.375;
-    final double FEEDER_UP = 0.55;
+    public static double FEEDER_DOWN = 0.37; // static so that it can be tuned via Panels
+    public static double FEEDER_UP = 0.47;
+    int loopsOfFeederMotion;
+    double flywheelErrorL;
+    double flywheelErrorR;
 
     // Declare and/or initialize other variables
     int velocityRPM = 3200;
@@ -43,6 +54,7 @@ public class CompetitionTeleOp extends OpMode {
     public static double flywheelP = 200.0;
 
     boolean intakeIsActive;
+
     double headingFieldCentric;
     double headingRadians;
     double robotX;
@@ -58,10 +70,19 @@ public class CompetitionTeleOp extends OpMode {
     public final double LED_BLUE = 0.611;
     public final double LED_GREEN = 0.5;
     public final double LED_YELLOW = 0.38;
+
     double lightColor;
     public boolean isBlue;
     public boolean inPosition = false;
     public boolean inPositionPark = false;
+
+    // Color sensor variables
+    public enum SensedColors {
+        PURPLE,
+        GREEN,
+        UNKNOWN
+    }
+    public static double colorSensorGain = 5; // static so that it can be tuned via Panels
 
 
     // Custom class to store information for Z-Target Drive
@@ -127,13 +148,26 @@ public class CompetitionTeleOp extends OpMode {
         setDriveModes(DcMotor.RunMode.RUN_USING_ENCODER);
 
 
+        // Color sensor setup
+        colorSensor = hardwareMap.get(NormalizedColorSensor.class,"color_sensor");
+
+
         // Pinpoint setup
         String pinpointName = Constants.localizerConstants.hardwareMapName;
         GoBildaPinpointDriver.EncoderDirection forwardDirection = Constants.localizerConstants.forwardEncoderDirection;
         GoBildaPinpointDriver.EncoderDirection strafeDirection = Constants.localizerConstants.strafeEncoderDirection;
         GoBildaPinpointDriver.GoBildaOdometryPods resolution = Constants.localizerConstants.encoderResolution;
-        double xOffset = Constants.localizerConstants.forwardPodY;  // The forward pod tracks X
-        double yOffset = Constants.localizerConstants.strafePodX;   // The strafe pod tracks Y
+        //  "xOffset" means the offset (Y) of the X (forward) pod   "forwardPodY" means the Y offset of the forward (X) pod
+        double xOffset = Constants.localizerConstants.forwardPodY;
+        //  "yOffset" means the offset (X) of the Y (strafe) pod   "strafePodX" means the X offset of the strafe (Y) pod
+        double yOffset = Constants.localizerConstants.strafePodX;
+        /*
+                  +X
+                   ^           Offsets are perpendicular to the tracking direction of the pod
+             +Y <--|--> -Y          X is forward and Y is strafe
+                   V                +X is up and +Y is left
+                  -X
+         */
 
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, pinpointName);
         pinpoint.setEncoderDirections(forwardDirection, strafeDirection);
@@ -146,7 +180,9 @@ public class CompetitionTeleOp extends OpMode {
     @Override
     public void init_loop() {
 
-        //
+        // Display the chosen starting location just as confirmation for the drivers
+        telemetryM.addData("Location", AALocationChooser.chosenStartingLocation);
+        telemetryM.update(telemetry);
 
     }
 
@@ -190,46 +226,46 @@ public class CompetitionTeleOp extends OpMode {
         double desiredForward = -gamepad1.left_stick_y;
         double desiredStrafe = gamepad1.left_stick_x;
 
-        double powerForward = desiredForward;
-        double powerStrafe = desiredStrafe;
-        double powerAngular;
+        double powerAngular = -gamepad1.right_stick_x;
+        double powerForward = desiredForward;  // Assume field centric is not being used
+        double powerStrafe = desiredStrafe;    // Assume field centric is not being used
 
         // Modify powers based on robot heading for field-centric drive
         if (fieldCentricInUse) {
             powerForward = (desiredForward * Math.cos(headingFieldCentric)) - (desiredStrafe * Math.sin(headingFieldCentric));
             powerStrafe = (desiredStrafe * Math.cos(headingFieldCentric)) + (desiredForward * Math.sin(headingFieldCentric));
         }
-
-        // Toggle field centric drive in case the Pinpoint errors
+        // Be able to toggle field centric drive in case the Pinpoint fails somehow
         if (gamepad1.startWasPressed()) {
             fieldCentricInUse = !fieldCentricInUse;
         }
 
-        // Z-Target and normal turning code
+        // Override angular power for Z-Target Drive
         if (gamepad1.a) {
             // Set target heading based on the goal and its position compared to the robot
-            towardsGoalHeading = ZTargetCalculations();
+            towardsGoalHeading = ZTargetCalculations(180);
             powerAngular = towardsGoalHeading.getDirection() * towardsGoalHeading.getError()/30.0;
-        } else {
-            powerAngular = -gamepad1.right_stick_x;
         }
 
-        mecanumDriveCode(powerForward, powerStrafe, powerAngular);
+        // Run the wheels using the desired powers
+        mecanumDriveCode(powerForward, powerStrafe, powerAngular, 1.0);
 
 
         // ....... FLYWHEEL CONTROLS .......
         if (gamepad2.right_trigger > 0.5) {
             // Launch balls
-            launchL.setVelocity(velocityRPM * RPM_TO_TPS);
-            launchR.setVelocity(velocityRPM * RPM_TO_TPS);
+            launchL.setVelocity(velocityRPM * TPS_PER_RPM);
+            launchR.setVelocity(velocityRPM * TPS_PER_RPM);
         } else if (gamepad2.left_trigger > 0.5) {
             // Reverse wheels to bring balls back in if necessary
-            launchL.setVelocity(-2000 * RPM_TO_TPS);
-            launchR.setVelocity(-2000 * RPM_TO_TPS);
+            launchL.setVelocity(-2500 * TPS_PER_RPM);
+            launchR.setVelocity(-2500 * TPS_PER_RPM);
         } else {
             launchL.setVelocity(0);
             launchR.setVelocity(0);
         }
+        flywheelErrorL = (velocityRPM * TPS_PER_RPM) - launchL.getVelocity();
+        flywheelErrorR = (velocityRPM * TPS_PER_RPM) - launchR.getVelocity();
 
         // ....... VELOCITY MODIFICATION .......
         if (gamepad2.dpadUpWasPressed()) {
@@ -237,7 +273,8 @@ public class CompetitionTeleOp extends OpMode {
         } else if (gamepad2.dpadDownWasPressed()) {
             velocityRPM -= 100;
         }
-        telemetry.addLine("Wheel Velocity: " + velocityRPM + " RPM");
+        telemetryM.addLine("Wheel Velocity: " + velocityRPM + " RPM");
+
 
         // ....... INTAKE CONTROLS .......
         if (gamepad1.rightBumperWasPressed()) {
@@ -257,8 +294,10 @@ public class CompetitionTeleOp extends OpMode {
         // ....... FEEDER CONTROLS .......
         if (gamepad2.right_bumper) {
             feeder.setPosition(FEEDER_UP);
+            loopsOfFeederMotion ++;
         } else {
             feeder.setPosition(FEEDER_DOWN);
+            loopsOfFeederMotion = 0;
         }
 
         // ....... LED LIGHT CODE .......
@@ -270,12 +309,18 @@ public class CompetitionTeleOp extends OpMode {
 
         //telemetry.addData("Label", "Information");
 
-        telemetry.addData("X Position", robotX);
-        telemetry.addData("Y Position", robotY);
-        telemetry.addData("Heading", Math.toDegrees(headingRadians));
-        telemetry.addData("Relative heading", Math.toDegrees(headingFieldCentric));
-        telemetry.addData("Flywheel error", (velocityRPM * RPM_TO_TPS) - launchR.getVelocity());
-        telemetry.update();
+        telemetryM.addData("X Position", robotX);
+        telemetryM.addData("Y Position", robotY);
+        telemetryM.addData("Heading", Math.toDegrees(headingRadians));
+        telemetryM.addData("Relative heading", Math.toDegrees(headingFieldCentric));
+        telemetryM.addData("Loops since servo lifted", loopsOfFeederMotion);
+        if (Math.abs(flywheelErrorL) < 100) {
+            telemetryM.addData("Flywheel1 error", flywheelErrorL);
+            telemetryM.addData("Flywheel2 error", flywheelErrorR);
+            telemetryM.addData("Error difference", flywheelErrorL - flywheelErrorR);
+        }
+        getSensedColor();
+        telemetryM.update(telemetry);
 
     }
 
@@ -293,7 +338,7 @@ public class CompetitionTeleOp extends OpMode {
         motorRB.setZeroPowerBehavior(behavior);
     }
 
-    public void mecanumDriveCode(double forward, double strafe, double angular) {
+    public void mecanumDriveCode(double forward, double strafe, double angular, double speedPercent) {
         // Perform vector math to determine the desired powers for each wheel
         double powerLF = strafe + forward - angular;
         double powerLB = -strafe + forward - angular;
@@ -307,10 +352,10 @@ public class CompetitionTeleOp extends OpMode {
         max = Math.max(max, Math.abs(powerRB));
 
         // Scale all power variables down to a number between 0 and 1 (so that setPower will accept them)
-        motorLF.setPower(powerLF /max);
-        motorLB.setPower(powerLB /max);
-        motorRF.setPower(powerRF /max);
-        motorRB.setPower(powerRB /max);
+        motorLF.setPower(powerLF /max * speedPercent);
+        motorLB.setPower(powerLB /max * speedPercent);
+        motorRF.setPower(powerRF /max * speedPercent);
+        motorRB.setPower(powerRB /max * speedPercent);
     }
 
 
@@ -324,12 +369,12 @@ public class CompetitionTeleOp extends OpMode {
 
 
     // ....... Z-TARGETING METHODS .......
-    public TargetHeading ZTargetCalculations() {
+    public TargetHeading ZTargetCalculations(double headingOffset) {
         double desiredHeadingDegrees = ratioOfSidesToHeading(goalPos.getX(DistanceUnit.INCH) - robotX,
                                                              goalPos.getY(DistanceUnit.INCH) - robotY);
-        telemetry.addData("Target heading", desiredHeadingDegrees);
-        // The intake is the front of the robot, so add 180 degrees to point the launcher towards the goal
-        return determineRotationDirection(Math.toDegrees(headingRadians)+180, desiredHeadingDegrees);
+        telemetryM.addData("Target heading", desiredHeadingDegrees);
+        // By default, the intake is the front of the robot. To change that, an offset can be applied here
+        return determineRotationDirection(Math.toDegrees(headingRadians) + headingOffset, desiredHeadingDegrees);
     }
 
     public double ratioOfSidesToHeading(double X, double Y) {
@@ -443,6 +488,20 @@ public class CompetitionTeleOp extends OpMode {
             inPositionPark = false;
             inPosition = false;
         }
+    }
+
+    // ....... COLOR SENSOR METHODS .......
+    public SensedColors getSensedColor() {
+
+        // Read the direct RGB output of the color sensor
+        NormalizedRGBA rawColors = colorSensor.getNormalizedColors();
+        telemetryM.addLine("Sensor red: " + rawColors.red + " | normalized: " + (rawColors.red / rawColors.alpha));
+        telemetryM.addLine("Sensor green: " + rawColors.green + " | normalized: " + (rawColors.green / rawColors.alpha));
+        telemetryM.addLine("Sensor blue: " + rawColors.blue + " | normalized: " + (rawColors.blue / rawColors.alpha));
+
+        // TODO: Set RGB values for purple and green
+        // TODO: Return actual detected color
+        return SensedColors.UNKNOWN;
     }
 
 } // end class

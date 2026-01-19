@@ -7,7 +7,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
-@TeleOp
+@TeleOp(name = "Location Chooser", group = "OpModes")
 public class AALocationChooser extends OpMode {
 
     // Define starting position names
