@@ -21,7 +21,7 @@ public class AutoTest extends OpMode {
     public void init() {
 
         follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(new Pose(72, 72, Math.toRadians(180)));
+        follower.setStartingPose(new Pose(72, 72, Math.toRadians(90)));
 
         paths = new Paths(follower); // Build paths
     }
@@ -33,35 +33,36 @@ public class AutoTest extends OpMode {
     }
 
     public static class Paths {
-
-        public PathChain forward;
-        public PathChain strafe;
-        public PathChain curve;
+        public PathChain Path1;
+        public PathChain Path2;
+        public PathChain Path3;
 
         public Paths(Follower follower) {
-            forward = follower.pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(72.000, 72.000), new Pose(48.116, 72.000))
-                    )
-                    .setConstantHeadingInterpolation(Math.toRadians(180))
-                    .build();
-
-            strafe = follower.pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(48.116, 72.000), new Pose(48.291, 47.942))
-                    )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(270))
-                    .build();
-
-            curve = follower.pathBuilder()
-                    .addPath(
-                            new BezierCurve(
-                                    new Pose(48.291, 47.942),
-                                    new Pose(48.116, 69.385),
-                                    new Pose(72.349, 72.000)
+            Path1 = follower.pathBuilder().addPath(
+                    new BezierLine(
+                            new Pose(72.000, 72.000),
+                            new Pose(96.000, 96.000)
                             )
+                    ).setConstantHeadingInterpolation(Math.toRadians(90))
+                    .build();
+
+            Path2 = follower.pathBuilder().addPath(
+                    new BezierCurve(
+                            new Pose(96.000, 96.000),
+                            new Pose(105.847, 107.776),
+                            new Pose(106.649, 60.903)
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(180))
+                    ).setConstantHeadingInterpolation(Math.toRadians(90))
+                    .build();
+
+            Path3 = follower.pathBuilder().addPath(
+                    new BezierCurve(
+                            new Pose(106.649, 60.903),
+                            new Pose(108.571, 93.499),
+                            new Pose(71.053, 94.700),
+                            new Pose(72.048, 71.683)
+                    )
+                    ).setTangentHeadingInterpolation()
                     .build();
         }
     }
@@ -74,29 +75,25 @@ public class AutoTest extends OpMode {
 
         switch (pathState) {
             case 0:
-                // Start the "forward" path and change states
-                follower.followPath(paths.forward);
+                follower.followPath(paths.Path1);
                 pathState = 1;
                 break;
 
             case 1:
-                // When the "forward" path finishes, move to the next path
                 if (!follower.isBusy()) {
-                    follower.followPath(paths.strafe);
+                    follower.followPath(paths.Path2);
                     pathState = 2;
                 }
                 break;
 
             case 2:
-                // When the "strafe" path finishes, move to the next path
                 if (!follower.isBusy()) {
-                    follower.followPath(paths.curve, true);
+                    follower.followPath(paths.Path3, true);
                     pathState = 3;
                 }
                 break;
 
             case 3:
-                // When the "curve" path finishes, the auto is done, so end the state machine
                 if (!follower.isBusy()) {
                     pathState = -1;
                 }
