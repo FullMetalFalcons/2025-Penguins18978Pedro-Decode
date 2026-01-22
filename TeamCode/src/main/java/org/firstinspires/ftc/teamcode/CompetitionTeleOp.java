@@ -12,47 +12,34 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
-import com.qualcomm.robotcore.hardware.NormalizedRGBA;
-import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+
+import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
+import com.qualcomm.robotcore.hardware.NormalizedRGBA;
+
+import java.text.DecimalFormat;
 
 @TeleOp(name = "TeleOp", group = "OpModes")
 @Configurable
 public class CompetitionTeleOp extends OpMode {
 
     // Declare motors, servos, sensors, imus, etc.
-    DcMotorEx motorLF, motorRF, motorLB, motorRB, intake, launchL, launchR;
+    DcMotorEx motorLF, motorRF, motorLB, motorRB;
     GoBildaPinpointDriver pinpoint;
     NormalizedColorSensor colorSensor;
-    Servo feeder, light1, light2;
+    Servo light1, light2;
 
     // Create a telemetry manager so that telemetry shows up on the Panels dashboard
     TelemetryManager telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
 
-    // Create constants
-    final double TICKS_PER_ROTATION = 28;
-    final double TPS_PER_RPM = TICKS_PER_ROTATION / 60;
-    /*
-        Rotation       Tick       Minute
-        --------  *  --------  *  ------
-         Minute      Rotation     Second
-     */
-
-    public static double FEEDER_DOWN = 0.37; // static so that it can be tuned via Panels
-    public static double FEEDER_UP = 0.47;
+    // Create a launcher to manage operator motors
+    LaunchSystem penguinsLauncher = new LaunchSystem();
     int loopsOfFeederMotion;
     double flywheelErrorL;
     double flywheelErrorR;
 
     // Declare and/or initialize other variables
-    int velocityRPM = 3200;
-
-    public static double flywheelF = 13.0;
-    public static double flywheelP = 200.0;
-
     boolean intakeIsActive;
 
     double headingFieldCentric;
@@ -85,6 +72,9 @@ public class CompetitionTeleOp extends OpMode {
     public static double colorSensorGain = 5; // static so that it can be tuned via Panels
 
 
+    // Create a decimal format for displaying values to telemetry with only a few decimal places visible
+    DecimalFormat formatter = new DecimalFormat("#.###");
+
     // Custom class to store information for Z-Target Drive
     public class TargetHeading{
         // Instance variables
@@ -116,20 +106,8 @@ public class CompetitionTeleOp extends OpMode {
         motorRB = hardwareMap.get(DcMotorEx.class, Constants.driveConstants.rightRearMotorName);
 
         // Setup other motors
-        intake = (DcMotorEx) hardwareMap.dcMotor.get("intake");
-        launchL = (DcMotorEx) hardwareMap.dcMotor.get("launchL");
-        launchR = (DcMotorEx) hardwareMap.dcMotor.get("launchR");
-        feeder = hardwareMap.servo.get("feeder");
         light1 = hardwareMap.servo.get("light1");
         light2 = hardwareMap.servo.get("light2");
-
-        // Set motor properties for the operator motors
-        launchR.setDirection(DcMotorSimple.Direction.REVERSE);
-        launchL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        launchR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        // Set flywheel Feedforward and Proportional constants
-        launchL.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(flywheelP,0,0,  flywheelF));
-        launchR.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(flywheelP,0,0,  flywheelF));
 
         // Reverse the motors based on constants file
         motorLF.setDirection(Constants.driveConstants.leftFrontMotorDirection);
@@ -147,6 +125,9 @@ public class CompetitionTeleOp extends OpMode {
         //If you have a STOP_AND_RESET_ENCODER, make sure to put this below it
         setDriveModes(DcMotor.RunMode.RUN_USING_ENCODER);
 
+
+        // Operator motors setup
+        penguinsLauncher.init(hardwareMap);
 
         // Color sensor setup
         colorSensor = hardwareMap.get(NormalizedColorSensor.class,"color_sensor");
@@ -202,6 +183,7 @@ public class CompetitionTeleOp extends OpMode {
         if (gamepad1.b) {
             startingPos = new Pose2D(DistanceUnit.INCH, 0, 0,
                                      AngleUnit.DEGREES, 0);
+            pinpoint.resetPosAndIMU();
             goalPos = startingPos;
             driverHeadingDegrees = 0;
         } else {
@@ -244,61 +226,78 @@ public class CompetitionTeleOp extends OpMode {
         if (gamepad1.a) {
             // Set target heading based on the goal and its position compared to the robot
             towardsGoalHeading = ZTargetCalculations(180);
-            powerAngular = towardsGoalHeading.getDirection() * towardsGoalHeading.getError()/30.0;
+            powerAngular = towardsGoalHeading.getDirection() * towardsGoalHeading.getError() / 30.0;
         }
 
         // Run the wheels using the desired powers
         mecanumDriveCode(powerForward, powerStrafe, powerAngular, 1.0);
 
+        if (!penguinsLauncher.isBusy()) {
 
-        // ....... FLYWHEEL CONTROLS .......
-        if (gamepad2.right_trigger > 0.5) {
-            // Launch balls
-            launchL.setVelocity(velocityRPM * TPS_PER_RPM);
-            launchR.setVelocity(velocityRPM * TPS_PER_RPM);
-        } else if (gamepad2.left_trigger > 0.5) {
-            // Reverse wheels to bring balls back in if necessary
-            launchL.setVelocity(-2500 * TPS_PER_RPM);
-            launchR.setVelocity(-2500 * TPS_PER_RPM);
-        } else {
-            launchL.setVelocity(0);
-            launchR.setVelocity(0);
-        }
-        flywheelErrorL = (velocityRPM * TPS_PER_RPM) - launchL.getVelocity();
-        flywheelErrorR = (velocityRPM * TPS_PER_RPM) - launchR.getVelocity();
+            // ....... FLYWHEEL CONTROLS .......
+            if (gamepad2.right_trigger > 0.5) {
+                // Launch balls
+                penguinsLauncher.setLauncherVelocity(penguinsLauncher.velocityRpm);
+            } else if (gamepad2.left_trigger > 0.5) {
+                // Reverse wheels to bring balls back in if necessary
+                penguinsLauncher.setLauncherVelocity(-2500);
+            } else {
+                penguinsLauncher.setLauncherVelocity(0);
+            }
+            flywheelErrorL = penguinsLauncher.getFlywheelError(penguinsLauncher.launchL);
+            flywheelErrorR = penguinsLauncher.getFlywheelError(penguinsLauncher.launchR);
 
-        // ....... VELOCITY MODIFICATION .......
-        if (gamepad2.dpadUpWasPressed()) {
-            velocityRPM += 100;
-        } else if (gamepad2.dpadDownWasPressed()) {
-            velocityRPM -= 100;
-        }
-        telemetryM.addLine("Wheel Velocity: " + velocityRPM + " RPM");
+            // ....... VELOCITY MODIFICATION .......
+            if (gamepad2.dpadUpWasPressed()) {
+                penguinsLauncher.changeTargetVelocity(100);
+            } else if (gamepad2.dpadDownWasPressed()) {
+                penguinsLauncher.changeTargetVelocity(-100);
+            }
+            telemetryM.addLine("Wheel Velocity: " + penguinsLauncher.velocityRpm + " RPM");
 
 
-        // ....... INTAKE CONTROLS .......
-        if (gamepad1.rightBumperWasPressed()) {
-            // Switch intake states
-            intakeIsActive = !intakeIsActive;
-        }
-        if (gamepad1.left_bumper) {
-            // Left bumper overrides to outtake (in case of emergency)
-            intake.setPower(-1);
-        } else if (intakeIsActive || gamepad2.left_bumper) {
-            // Intake runs if it is toggled on
-            intake.setPower(1);
-        } else {
-            intake.setPower(0);
+            // ....... INTAKE CONTROLS .......
+            if (gamepad1.rightBumperWasPressed()) {
+                // Switch intake states
+                intakeIsActive = !intakeIsActive;
+            }
+            if (gamepad1.left_bumper) {
+                // Left bumper overrides to outtake (in case of emergency)
+                penguinsLauncher.setIntakePower(-1);
+            } else if (intakeIsActive || gamepad2.left_bumper) {
+                // Intake runs if it is toggled on
+                penguinsLauncher.setIntakePower(1);
+            } else {
+                penguinsLauncher.setIntakePower(0);
+            }
+
+            // ....... FEEDER CONTROLS .......
+            if (gamepad2.right_bumper) {
+                penguinsLauncher.setFeederPosition(LaunchSystem.FEEDER_UP);
+                loopsOfFeederMotion++;
+            } else {
+                penguinsLauncher.setFeederPosition(LaunchSystem.FEEDER_DOWN);
+                loopsOfFeederMotion = 0;
+            }
+
         }
 
-        // ....... FEEDER CONTROLS .......
-        if (gamepad2.right_bumper) {
-            feeder.setPosition(FEEDER_UP);
-            loopsOfFeederMotion ++;
-        } else {
-            feeder.setPosition(FEEDER_DOWN);
-            loopsOfFeederMotion = 0;
+        // ......... LAUNCH SEQUENCE MACROS .......
+        if (gamepad2.aWasPressed()) {
+            // Automatically launch one ball
+            penguinsLauncher.fireBalls(1);
         }
+        if (gamepad2.xWasPressed()) {
+            // Automatically launch three sequential balls
+            penguinsLauncher.fireBalls(3);
+        }
+        if (gamepad2.yWasPressed()) {
+            // Emergency stop button to quit out of launching balls
+            penguinsLauncher.stopActions();
+        }
+        penguinsLauncher.update();
+
+
 
         // ....... LED LIGHT CODE .......
         indicatorLightCode();
@@ -309,15 +308,16 @@ public class CompetitionTeleOp extends OpMode {
 
         //telemetry.addData("Label", "Information");
 
-        telemetryM.addData("X Position", robotX);
-        telemetryM.addData("Y Position", robotY);
-        telemetryM.addData("Heading", Math.toDegrees(headingRadians));
-        telemetryM.addData("Relative heading", Math.toDegrees(headingFieldCentric));
+        // %.2f forces the numbers to truncate to only 2 decimal places
+        telemetryM.addData("X Position", formatter.format( robotX ));
+        telemetryM.addData("Y Position", formatter.format( robotY ));
+        telemetryM.addData("Heading", formatter.format( Math.toDegrees(headingRadians) ));
+        telemetryM.addData("Relative heading", formatter.format( Math.toDegrees(headingFieldCentric) ));
         telemetryM.addData("Loops since servo lifted", loopsOfFeederMotion);
-        if (Math.abs(flywheelErrorL) < 100) {
-            telemetryM.addData("Flywheel1 error", flywheelErrorL);
-            telemetryM.addData("Flywheel2 error", flywheelErrorR);
-            telemetryM.addData("Error difference", flywheelErrorL - flywheelErrorR);
+        if (Math.abs(flywheelErrorL) < 500) {
+            telemetryM.addData("Flywheel1 error", Math.round( flywheelErrorL ));
+            telemetryM.addData("Flywheel2 error", Math.round( flywheelErrorR ));
+            telemetryM.addData("Error difference", Math.round( flywheelErrorL - flywheelErrorR ));
         }
         getSensedColor();
         telemetryM.update(telemetry);
@@ -372,7 +372,6 @@ public class CompetitionTeleOp extends OpMode {
     public TargetHeading ZTargetCalculations(double headingOffset) {
         double desiredHeadingDegrees = ratioOfSidesToHeading(goalPos.getX(DistanceUnit.INCH) - robotX,
                                                              goalPos.getY(DistanceUnit.INCH) - robotY);
-        telemetryM.addData("Target heading", desiredHeadingDegrees);
         // By default, the intake is the front of the robot. To change that, an offset can be applied here
         return determineRotationDirection(Math.toDegrees(headingRadians) + headingOffset, desiredHeadingDegrees);
     }
@@ -495,9 +494,9 @@ public class CompetitionTeleOp extends OpMode {
 
         // Read the direct RGB output of the color sensor
         NormalizedRGBA rawColors = colorSensor.getNormalizedColors();
-        telemetryM.addLine("Sensor red: " + rawColors.red + " | normalized: " + (rawColors.red / rawColors.alpha));
-        telemetryM.addLine("Sensor green: " + rawColors.green + " | normalized: " + (rawColors.green / rawColors.alpha));
-        telemetryM.addLine("Sensor blue: " + rawColors.blue + " | normalized: " + (rawColors.blue / rawColors.alpha));
+        telemetryM.addLine("Sensor red: " + formatter.format( rawColors.red ) + " | normalized: " + formatter.format( rawColors.red / rawColors.alpha ));
+        telemetryM.addLine("Sensor green: " + formatter.format( rawColors.green ) + " | normalized: " + formatter.format( rawColors.green / rawColors.alpha ));
+        telemetryM.addLine("Sensor blue: " + formatter.format( rawColors.blue ) + " | normalized: " + formatter.format( rawColors.blue / rawColors.alpha ));
 
         // TODO: Set RGB values for purple and green
         // TODO: Return actual detected color

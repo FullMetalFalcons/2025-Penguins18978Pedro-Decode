@@ -26,7 +26,8 @@ public class LaunchSystem {
         IDLE,
         LOAD,
         PREPARE,
-        LAUNCH
+        LAUNCH,
+        FOLLOW_THROUGH
     }
 
     // Static constants that can be tuned in Panels
@@ -83,27 +84,24 @@ public class LaunchSystem {
                     setState(LauncherState.LOAD);
                 }
                 break;
-
             case LOAD:
-                // Intake the next ball
-                setLauncherVelocity(0);
+                // Intake the next ball and begin spinning up the flywheels
+                setLauncherVelocity(velocityRpm);
                 intake.setPower(1);
-                if (stateTimer.seconds() > 0.5) {
+                if (stateTimer.seconds() > 0.3) {
                     // Stop the intake and switch to the next state
                     setState(LauncherState.PREPARE);
                     intake.setPower(0);
                 }
                 break;
-
             case PREPARE:
-                // Spin up the flywheels
-                setLauncherVelocity(velocityRpm);
-                if ((getFlywheelError(launchL) < 80 && getFlywheelError(launchR) < 80) || stateTimer.seconds() > 2.0) {
-                    //
+                // Wait for the flywheels to finish spinning up
+                // Also wait a mandatory pause to allow the ball to settle
+                if (((getFlywheelError(launchL) < 80 && getFlywheelError(launchR) < 80) || stateTimer.seconds() > 2.0)
+                                                                                        && stateTimer.seconds() > 0.5) {
                     setState(LauncherState.LAUNCH);
                 }
                 break;
-
             case LAUNCH:
                 // Feed a ball into the flywheels and wait for the servo to finish moving
                 feeder.setPosition(FEEDER_UP);
@@ -112,16 +110,21 @@ public class LaunchSystem {
                     ballsToFire --;
                     feeder.setPosition(FEEDER_DOWN);
 
+                    // If more balls need to be launched, load in the next ball
+                    // If no more balls are queued up, then end the sequence
                     if (ballsToFire > 0) {
-                        // If more balls need to be launched, load in the next ball
                         setState(LauncherState.LOAD);
                     } else {
-                        // If no more balls are queued up, then go back to idle state
-                        setLauncherVelocity(0);
-                        setState(LauncherState.IDLE);
+                        setState(LauncherState.FOLLOW_THROUGH);
                     }
                 }
                 break;
+            case FOLLOW_THROUGH:
+                // Keep the flywheels spinning for a little longer to ensure that the last ball fires properly
+                if (stateTimer.seconds() > 0.5) {
+                    setLauncherVelocity(0);
+                    setState(LauncherState.IDLE);
+                }
         }
     }
 
@@ -132,11 +135,25 @@ public class LaunchSystem {
         currentState = newState;
     }
 
+    /** Interrupt any state machine actions that are currently in progress */
+    public void stopActions() {
+        if (isBusy()) {
+            // Reset all motors to their default positions/powers
+            intake.setPower(0);
+            setLauncherVelocity(0);
+            feeder.setPosition(FEEDER_DOWN);
+
+            // Clear any queued balls
+            ballsToFire = 0;
+
+            // Exit the state machine and return to idle
+            setState(LauncherState.IDLE);
+        }
+    }
+
     /** Tell the state machine to load and launch a certain number of balls */
     public void fireBalls(int numBalls) {
-        if (currentState == LauncherState.IDLE) {
-            ballsToFire = numBalls;
-        }
+        if (!isBusy()) {  ballsToFire = numBalls;  }
     }
     public boolean isBusy() {
         return (currentState != LauncherState.IDLE) || (ballsToFire > 0);

@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.pedroPathing;
+package org.firstinspires.ftc.teamcode;
 
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
@@ -6,9 +6,15 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+
+@Autonomous
 public class RedGoalAuto extends OpMode {
+
+    LaunchSystem penguinsLauncher = new LaunchSystem();
 
     private Follower follower;
     private Timer pathTimer, actionTimer, opmodeTimer;
@@ -162,6 +168,7 @@ public class RedGoalAuto extends OpMode {
         opmodeTimer.resetTimer();
 
 
+        penguinsLauncher.init(hardwareMap);
         follower = Constants.createFollower(hardwareMap);
         buildPaths();
         follower.setStartingPose(startPose);
@@ -170,6 +177,7 @@ public class RedGoalAuto extends OpMode {
     @Override
     public void loop() {
         follower.update();
+        penguinsLauncher.update();
         autoPathUpdate();
 
         telemetry.addData("path state", pathState);
