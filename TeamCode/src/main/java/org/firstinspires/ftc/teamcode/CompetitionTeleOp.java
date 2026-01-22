@@ -49,7 +49,9 @@ public class CompetitionTeleOp extends OpMode {
     double headingRadians;
     double robotX;
     double robotY;
+
     boolean fieldCentricInUse = true;
+    boolean slowModeInUse = false;
 
     double driverHeadingDegrees;
     Pose2D startingPos;
@@ -213,8 +215,8 @@ public class CompetitionTeleOp extends OpMode {
         double desiredStrafe = gamepad1.left_stick_x;
 
         double powerAngular = -gamepad1.right_stick_x;
-        double powerForward = desiredForward;  // Assume field centric is not being used
-        double powerStrafe = desiredStrafe;    // Assume field centric is not being used
+        double powerForward = desiredForward;  // Assume field-centric is not being used
+        double powerStrafe = desiredStrafe;    // Assume field-centric is not being used
 
         // Modify powers based on robot heading for field-centric drive
         if (fieldCentricInUse) {
@@ -234,7 +236,18 @@ public class CompetitionTeleOp extends OpMode {
         }
 
         // Run the wheels using the desired powers
-        mecanumDriveCode(powerForward, powerStrafe, powerAngular, 1.0);
+        if (slowModeInUse) {
+            mecanumDriveCode(powerForward, powerStrafe, powerAngular, 0.4);
+        } else {
+            mecanumDriveCode(powerForward, powerStrafe, powerAngular, 1.0);
+        }
+
+        // Slow mode toggle
+        if (gamepad1.xWasPressed()) {
+            slowModeInUse = !slowModeInUse;
+        }
+
+
 
         if (!penguinsLauncher.isBusy()) {
 
@@ -312,7 +325,6 @@ public class CompetitionTeleOp extends OpMode {
 
         //telemetry.addData("Label", "Information");
 
-        // %.2f forces the numbers to truncate to only 2 decimal places
         telemetryM.addData("X Position", formatter.format( robotX ));
         telemetryM.addData("Y Position", formatter.format( robotY ));
         telemetryM.addData("Heading", formatter.format( Math.toDegrees(headingRadians) ));
