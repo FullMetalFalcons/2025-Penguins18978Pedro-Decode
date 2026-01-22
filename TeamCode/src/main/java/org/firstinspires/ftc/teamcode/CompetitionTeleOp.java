@@ -33,8 +33,11 @@ public class CompetitionTeleOp extends OpMode {
     // Create a telemetry manager so that telemetry shows up on the Panels dashboard
     TelemetryManager telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
 
-    // Create a launcher to manage operator motors
+    // Create instances of any systems that need to be used
     LaunchSystem penguinsLauncher = new LaunchSystem();
+    CameraSystem penguinsLens = new CameraSystem();
+
+
     int loopsOfFeederMotion;
     double flywheelErrorL;
     double flywheelErrorR;
@@ -126,8 +129,9 @@ public class CompetitionTeleOp extends OpMode {
         setDriveModes(DcMotor.RunMode.RUN_USING_ENCODER);
 
 
-        // Operator motors setup
+        // Initialize external systems
         penguinsLauncher.init(hardwareMap);
+        penguinsLens.init(hardwareMap);
 
         // Color sensor setup
         colorSensor = hardwareMap.get(NormalizedColorSensor.class,"color_sensor");
@@ -313,13 +317,14 @@ public class CompetitionTeleOp extends OpMode {
         telemetryM.addData("Y Position", formatter.format( robotY ));
         telemetryM.addData("Heading", formatter.format( Math.toDegrees(headingRadians) ));
         telemetryM.addData("Relative heading", formatter.format( Math.toDegrees(headingFieldCentric) ));
+
         telemetryM.addData("Loops since servo lifted", loopsOfFeederMotion);
-        if (Math.abs(flywheelErrorL) < 500) {
-            telemetryM.addData("Flywheel1 error", Math.round( flywheelErrorL ));
-            telemetryM.addData("Flywheel2 error", Math.round( flywheelErrorR ));
-            telemetryM.addData("Error difference", Math.round( flywheelErrorL - flywheelErrorR ));
-        }
+        telemetryM.addData("Flywheel1 error", Math.round( flywheelErrorL ));
+        telemetryM.addData("Flywheel2 error", Math.round( flywheelErrorR ));
+        telemetryM.addData("Error difference", Math.round( flywheelErrorL - flywheelErrorR ));
         getSensedColor();
+
+        telemetryM.addData("Detected motif pattern", penguinsLens.getHuskyLensPattern());
         telemetryM.update(telemetry);
 
     }

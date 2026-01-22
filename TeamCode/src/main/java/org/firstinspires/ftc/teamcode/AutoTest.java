@@ -26,7 +26,7 @@ public class AutoTest extends OpMode {
     @Override
     public void init() {
 
-        follower = Constants.createFollower(hardwareMap); // Make sure you create the follower before building pathsfff
+        follower = Constants.createFollower(hardwareMap); // Make sure you create the follower before building paths
         buildPaths();
         follower.setStartingPose(startPose);
 

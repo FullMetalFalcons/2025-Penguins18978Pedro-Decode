@@ -53,7 +53,7 @@ public class LaunchSystem {
      * @param hardwareMap the hardwareMap from OpMode that should be looked to when initializing motors */
     public void init(HardwareMap hardwareMap) {
 
-        // Get motors using hardware map passed in from TeleOp
+        // Get motors using hardware map passed in from an OpMode
         intake = (DcMotorEx) hardwareMap.dcMotor.get("intake");
         launchL = (DcMotorEx) hardwareMap.dcMotor.get("launchL");
         launchR = (DcMotorEx) hardwareMap.dcMotor.get("launchR");
