@@ -20,15 +20,16 @@ public class AALocationChooser extends OpMode {
 
     // Define possible starting coordinate positions
     private static final double PEDRO_CENTER = 72;
+    // x:21, y:122, heading:324
     public static final Pose2D BLUE_GOAL_STARTING = new Pose2D(DistanceUnit.INCH, PEDRO_CENTER-51, 122,
                                                       AngleUnit.DEGREES, 270+54);
-
+    // x:49, y:8, heading:90
     public static final Pose2D BLUE_WALL_STARTING = new Pose2D(DistanceUnit.INCH, PEDRO_CENTER-23, 8,
                                                       AngleUnit.DEGREES, 90);
-
+    // x:123, y:122, heading:216
     public static final Pose2D RED_GOAL_STARTING = new Pose2D(DistanceUnit.INCH, PEDRO_CENTER+51, 123,
                                                      AngleUnit.DEGREES, 270-54);
-
+    // x:95, y:8, heading:90
     public static final Pose2D RED_WALL_STARTING = new Pose2D(DistanceUnit.INCH, PEDRO_CENTER+23, 8,
                                                      AngleUnit.DEGREES, 90);
 

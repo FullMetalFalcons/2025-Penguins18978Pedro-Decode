@@ -4,6 +4,8 @@ import com.bylazar.telemetry.TelemetryManager;
 import com.qualcomm.hardware.dfrobot.HuskyLens;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+
 public class CameraSystem {
 
     // Declare the HuskyLens
@@ -43,15 +45,22 @@ public class CameraSystem {
         // Walk through each object seen by the HuskyLens
         for (HuskyLens.Block block : blocks) {
             if (block.id == 1) {
-                visiblePattern = Patterns.PURPLE_PURPLE_GREEN;
+                visiblePattern = Patterns.GREEN_PURPLE_PURPLE;
             } else if (block.id == 2) {
                 visiblePattern = Patterns.PURPLE_GREEN_PURPLE;
             } else if (block.id == 3) {
-                visiblePattern = Patterns.GREEN_PURPLE_PURPLE;
+                visiblePattern = Patterns.PURPLE_PURPLE_GREEN;
             }
         }
 
         return visiblePattern;
+    }
+
+    public void logVision(TelemetryManager telemetryM) {
+        blocks = lens.blocks();
+        for (HuskyLens.Block b : blocks) {
+            telemetryM.addData("Block", b.toString());
+        }
     }
 
 }

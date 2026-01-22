@@ -35,7 +35,7 @@ public class CompetitionTeleOp extends OpMode {
 
     // Create instances of any systems that need to be used
     LaunchSystem penguinsLauncher = new LaunchSystem();
-    CameraSystem penguinsLens = new CameraSystem();
+    CameraSystem penguinsCamera = new CameraSystem();
 
 
     int loopsOfFeederMotion;
@@ -133,7 +133,7 @@ public class CompetitionTeleOp extends OpMode {
 
         // Initialize external systems
         penguinsLauncher.init(hardwareMap);
-        penguinsLens.init(hardwareMap);
+        penguinsCamera.init(hardwareMap);
 
         // Color sensor setup
         colorSensor = hardwareMap.get(NormalizedColorSensor.class,"color_sensor");
@@ -336,7 +336,8 @@ public class CompetitionTeleOp extends OpMode {
         telemetryM.addData("Error difference", Math.round( flywheelErrorL - flywheelErrorR ));
         getSensedColor();
 
-        telemetryM.addData("Detected motif pattern", penguinsLens.getHuskyLensPattern());
+        telemetryM.addData("Detected motif pattern", penguinsCamera.getHuskyLensPattern());
+        penguinsCamera.logVision(telemetryM);
         telemetryM.update(telemetry);
 
     }
