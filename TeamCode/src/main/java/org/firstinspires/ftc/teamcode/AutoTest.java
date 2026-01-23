@@ -14,26 +14,55 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 @Autonomous
 public class AutoTest extends OpMode {
 
-    public Follower follower; // Pedro Pathing follower instance
-    private int pathState; // Current autonomous path state (state machine)
+    public Follower follower;
+    private int pathState;
 
     ElapsedTime delayTimer = new ElapsedTime();
+    ElapsedTime autoTimer = new ElapsedTime();
     double delaySeconds = 0.0;
+    final double AUTO_LENGTH_SECONDS = 30.0;
+    final double AUTO_END_BUFFER_SECONDS = 1.0;
 
     LaunchSystem penguinsLauncher = new LaunchSystem();
+    CameraSystem penguinsCamera = new CameraSystem();
 
-    private final Pose startPose = new Pose(25, 127, Math.toRadians(324));
-    private final Pose launchPose = new Pose(33, 110, Math.toRadians(315));
-    private final Pose intake1ReadyPose = new Pose(48, 84, Math.toRadians(180));
-    private final Pose intake1FinishPose = new Pose(24, 84, Math.toRadians(180));
-    private final Pose intake2ReadyPose = new Pose(48, 60, Math.toRadians(180));
-    private final Pose intake2FinishPose = new Pose(24, 60, Math.toRadians(180));
+    // Define important coordinate locations for the Blue side of the field
+    private Pose startPose = new Pose(16, 113, 0);
+    private Pose launchPose = new Pose(33, 110, Math.toRadians(315));
 
-    private PathChain launchPath1, intakePathReady1, intakePath1, launchPath2, intakePathReady2, intakePath2, launchPath3;
+    private Pose intake1ControlPoint = new Pose(48, 110);
+    private Pose intake1ReadyPose = new Pose(48, 84, Math.toRadians(180));
+
+    private Pose intake1FinishPose = new Pose(24, 84, Math.toRadians(180));
+
+    private Pose intake2ControlPoint = new Pose(51, 107);
+    private Pose intake2ReadyPose = new Pose(48, 60, Math.toRadians(180));
+
+    private Pose intake2FinishPose = new Pose(24, 60, Math.toRadians(180));
+
+    private Pose launch3ControlPoint = new Pose(41, 57);
+    private Pose leavePose = new Pose(40, 118, Math.toRadians(315));
+
+    private PathChain launchPath1, intakePathReady1,intakePath1, launchPath2, intakePathReady2,intakePath2, launchPath3, leavePath;
 
 
     @Override
     public void init() {
+
+        // Mirror coordinates across the x-Axis if the autonomous is run on the Red side
+        if (AALocationChooser.chosenStartingLocation == AALocationChooser.StartingLocation.RED_GOAL ||
+            AALocationChooser.chosenStartingLocation == AALocationChooser.StartingLocation.RED_WALL) {
+            startPose = startPose.mirror();
+            launchPose = launchPose.mirror();
+            intake1ReadyPose = intake1ReadyPose.mirror();
+              intake1ControlPoint = intake1ControlPoint.mirror();
+            intake1FinishPose = intake1FinishPose.mirror();
+            intake2ReadyPose = intake2ReadyPose.mirror();
+              intake2ControlPoint = intake2ControlPoint.mirror();
+            intake2FinishPose = intake2FinishPose.mirror();
+              launch3ControlPoint = launch3ControlPoint.mirror();
+            leavePose = leavePose.mirror();
+        }
 
         follower = Constants.createFollower(hardwareMap); // Make sure you create the follower before building paths
         buildPaths();
@@ -60,8 +89,9 @@ public class AutoTest extends OpMode {
 
     @Override
     public void start() {
-        // Reset the timer for the initial delay
+        // Reset any timers
         delayTimer.reset();
+        autoTimer.reset();
 
     }
 
@@ -76,11 +106,11 @@ public class AutoTest extends OpMode {
         // ....... Launch 1
         launchPath1 = follower.pathBuilder()
                 .addPath(new BezierLine(  startPose, launchPose  ))
-                .setConstantHeadingInterpolation(launchPose.getHeading()).build();
+                .setLinearHeadingInterpolation(startPose.getHeading(), launchPose.getHeading()).build();
 
         // ....... Intake 1
         intakePathReady1 = follower.pathBuilder()
-                .addPath(new BezierLine(  launchPose, intake1ReadyPose  ))
+                .addPath(new BezierCurve(  launchPose, intake1ControlPoint, intake1ReadyPose  ))
                 .setLinearHeadingInterpolation(launchPose.getHeading(), intake1ReadyPose.getHeading()).build();
         intakePath1 = follower.pathBuilder()
                 .addPath(new BezierLine(  intake1ReadyPose, intake1FinishPose  ))
@@ -93,7 +123,7 @@ public class AutoTest extends OpMode {
 
         // ....... Intake 2
         intakePathReady2 = follower.pathBuilder()
-                .addPath(new BezierLine(  launchPose, intake2ReadyPose  ))
+                .addPath(new BezierCurve(  launchPose, intake2ControlPoint, intake2ReadyPose  ))
                 .setLinearHeadingInterpolation(launchPose.getHeading(), intake2ReadyPose.getHeading()).build();
         intakePath2 = follower.pathBuilder()
                 .addPath(new BezierLine(  intake2ReadyPose, intake2FinishPose  ))
@@ -101,8 +131,14 @@ public class AutoTest extends OpMode {
 
         // ....... Launch 3
         launchPath3 = follower.pathBuilder()
-                .addPath(new BezierLine(  intake2FinishPose, launchPose  ))
+                .addPath(new BezierCurve(  intake2FinishPose, launch3ControlPoint, launchPose  ))
                 .setLinearHeadingInterpolation(intake2FinishPose.getHeading(), launchPose.getHeading()).build();
+
+        // ....... Leave Points
+        leavePath = follower.pathBuilder()
+                .addPath(new BezierLine(  launchPose, leavePose  ))
+                .setConstantHeadingInterpolation(leavePose.getHeading())
+                .build();
     }
 
     public void autonomousPathUpdate() {
@@ -141,7 +177,7 @@ public class AutoTest extends OpMode {
                 if (!follower.isBusy()) {
                     // Intake the first line of balls
                     penguinsLauncher.setIntakePower(1);
-                    follower.followPath(intakePath1, 0.2, true);
+                    follower.followPath(intakePath1, 0.25, true);
                     pathState = 4;
                 }
                 break;
@@ -179,7 +215,7 @@ public class AutoTest extends OpMode {
                 if (!follower.isBusy()) {
                     // Intake the second line of balls
                     penguinsLauncher.setIntakePower(1);
-                    follower.followPath(intakePath2, 0.2, true);
+                    follower.followPath(intakePath2, 0.25, true);
                     pathState = 8;
                 }
                 break;
@@ -205,8 +241,12 @@ public class AutoTest extends OpMode {
             case 10:
                 /* Let the third launch sequence play out */
 
-                if (!penguinsLauncher.isBusy()) {
-                    // Quit out of the state machine and end the route
+                // If the launch sequence is finished, or autonomous is about to end, move sideways for the Leave points
+                if (autoTimer.seconds() > AUTO_LENGTH_SECONDS - AUTO_END_BUFFER_SECONDS
+                    || !penguinsLauncher.isBusy()) {
+
+                    // Quit out of the state machine and move off of the Launch line
+                    follower.followPath(leavePath, true);
                     pathState = -1;
                 }
                 break;
