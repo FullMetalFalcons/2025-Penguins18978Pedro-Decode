@@ -1,14 +1,11 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
-
 @TeleOp(name = "Location Chooser", group = "OpModes")
-public class AALocationChooser extends OpMode {
+public class LocationChooser extends OpMode {
 
     // Define starting position names
     public enum StartingLocation {
@@ -19,29 +16,21 @@ public class AALocationChooser extends OpMode {
     }
 
     // Define possible starting coordinate positions
-    private static final double PEDRO_CENTER = 72;
-    // x:21, y:122, heading:324
-    public static final Pose2D BLUE_GOAL_STARTING = new Pose2D(DistanceUnit.INCH, PEDRO_CENTER-51, 122,
-                                                      AngleUnit.DEGREES, 270+54);
-    // x:49, y:8, heading:90
-    public static final Pose2D BLUE_WALL_STARTING = new Pose2D(DistanceUnit.INCH, PEDRO_CENTER-23, 8,
-                                                      AngleUnit.DEGREES, 90);
+    // Use PedroPathing's Pose class because it is easier to mirror across the field
+    public static final Pose BLUE_GOAL_STARTING_POSE = new Pose(21, 122, Math.toRadians(324));
+    public static final Pose BLUE_WALL_STARTING_POSE = new Pose(49, 8, Math.toRadians(90));
     // x:123, y:122, heading:216
-    public static final Pose2D RED_GOAL_STARTING = new Pose2D(DistanceUnit.INCH, PEDRO_CENTER+51, 123,
-                                                     AngleUnit.DEGREES, 270-54);
+    public static final Pose RED_GOAL_STARTING_POSE = BLUE_GOAL_STARTING_POSE.mirror();
     // x:95, y:8, heading:90
-    public static final Pose2D RED_WALL_STARTING = new Pose2D(DistanceUnit.INCH, PEDRO_CENTER+23, 8,
-                                                     AngleUnit.DEGREES, 90);
+    public static final Pose RED_WALL_STARTING_POSE = BLUE_WALL_STARTING_POSE.mirror();
 
     // Define goal positions for Z-Targeting System
-    public static final Pose2D BLUE_GOAL_POS = new Pose2D(DistanceUnit.INCH, PEDRO_CENTER-62, 137,
-                                                          AngleUnit.DEGREES, 0);
-    public static final Pose2D RED_GOAL_POS = new Pose2D(DistanceUnit.INCH, PEDRO_CENTER+62, 137,
-                                                         AngleUnit.DEGREES, 0);
+    public static final Pose BLUE_GOAL_POSE = new Pose(10, 137);
+    public static final Pose RED_GOAL_POSE =  BLUE_GOAL_POSE.mirror();
 
     public static StartingLocation chosenStartingLocation = StartingLocation.BLUE_GOAL;
-    public static Pose2D chosenStartingPos = BLUE_GOAL_STARTING;
-    public static Pose2D chosenGoalPos = BLUE_GOAL_POS;
+    public static Pose chosenStartingPose = BLUE_GOAL_STARTING_POSE;
+    public static Pose chosenGoalPose = BLUE_GOAL_POSE;
     public static double chosenDriverHeading = 180;
     private int locationNumber = 1;
 
@@ -83,22 +72,22 @@ public class AALocationChooser extends OpMode {
         // Set the robot and driver starting positions based on the menu selection
         switch (locationNumber) {
             case 1:
-                chosenStartingPos = BLUE_GOAL_STARTING;
+                chosenStartingPose = BLUE_GOAL_STARTING_POSE;
                 chosenStartingLocation = StartingLocation.BLUE_GOAL;
                 telemetry.addLine("Blue Goal successfully selected!");
                 break;
             case 2:
-                chosenStartingPos = BLUE_WALL_STARTING;
+                chosenStartingPose = BLUE_WALL_STARTING_POSE;
                 chosenStartingLocation = StartingLocation.BLUE_WALL;
                 telemetry.addLine("Blue Wall successfully selected!");
                 break;
             case 3:
-                chosenStartingPos = RED_GOAL_STARTING;
+                chosenStartingPose = RED_GOAL_STARTING_POSE;
                 chosenStartingLocation = StartingLocation.RED_GOAL;
                 telemetry.addLine("Red Goal successfully selected!");
                 break;
             case 4:
-                chosenStartingPos = RED_WALL_STARTING;
+                chosenStartingPose = RED_WALL_STARTING_POSE;
                 chosenStartingLocation = StartingLocation.RED_WALL;
                 telemetry.addLine("Red Wall successfully selected!");
                 break;
@@ -106,15 +95,14 @@ public class AALocationChooser extends OpMode {
 
         // Setup goal and driver location based on alliance color
         if (chosenStartingLocation == StartingLocation.BLUE_GOAL || chosenStartingLocation == StartingLocation.BLUE_WALL) {
-            chosenGoalPos = BLUE_GOAL_POS;
+            chosenGoalPose = BLUE_GOAL_POSE;
             chosenDriverHeading = 180;
         } else {
-            chosenGoalPos = RED_GOAL_POS;
+            chosenGoalPose = RED_GOAL_POSE;
             chosenDriverHeading = 0;
         }
 
         telemetry.update();
-
     }
 
     // Runs continually after START is pressed and before STOP is pressed

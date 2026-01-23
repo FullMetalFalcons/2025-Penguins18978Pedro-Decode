@@ -8,6 +8,7 @@ import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -54,8 +55,8 @@ public class CompetitionTeleOp extends OpMode {
     boolean slowModeInUse = false;
 
     double driverHeadingDegrees;
-    Pose2D startingPos;
-    Pose2D goalPos;
+    Pose startingPose;
+    Pose goalPose;
 
     // Indicator Light constants
     public final double LED_RED = 0.279;
@@ -168,7 +169,7 @@ public class CompetitionTeleOp extends OpMode {
     public void init_loop() {
 
         // Display the chosen starting location just as confirmation for the drivers
-        telemetryM.addData("Location", AALocationChooser.chosenStartingLocation);
+        telemetryM.addData("Location", LocationChooser.chosenStartingLocation);
         telemetryM.update(telemetry);
 
     }
@@ -178,8 +179,8 @@ public class CompetitionTeleOp extends OpMode {
     public void start() {
 
         // Set the alliance color (for the LED light)
-        if (AALocationChooser.chosenStartingLocation == AALocationChooser.StartingLocation.BLUE_GOAL ||
-                AALocationChooser.chosenStartingLocation == AALocationChooser.StartingLocation.BLUE_WALL) {
+        if (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.BLUE_GOAL ||
+                LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.BLUE_WALL) {
             isBlue = true;
         } else {
             isBlue = false;
@@ -187,19 +188,18 @@ public class CompetitionTeleOp extends OpMode {
 
         // Import robot starting location from the Location Chooser, unless B is pressed (override for practice)
         if (gamepad1.b) {
-            startingPos = new Pose2D(DistanceUnit.INCH, 0, 0,
-                                     AngleUnit.DEGREES, 0);
             pinpoint.resetPosAndIMU();
-            goalPos = startingPos;
+            startingPose = new Pose(0, 0, 0);
+            goalPose = startingPose;
             driverHeadingDegrees = 0;
         } else {
-            startingPos = AALocationChooser.chosenStartingPos;
-            goalPos = AALocationChooser.chosenGoalPos;
-            driverHeadingDegrees = AALocationChooser.chosenDriverHeading;
+            startingPose = LocationChooser.chosenStartingPose;
+            goalPose = LocationChooser.chosenGoalPose;
+            driverHeadingDegrees = LocationChooser.chosenDriverHeading;
         }
-        // Autonomous programs set startingPos to null
-        if (startingPos != null) {
-            pinpoint.setPosition(startingPos);
+        // Autonomous programs set startingPose to null
+        if (startingPose != null) {
+            pinpoint.setPosition(PoseConverter.poseToPose2D(startingPose));
         }
     }
 
@@ -337,7 +337,6 @@ public class CompetitionTeleOp extends OpMode {
         getSensedColor();
 
         telemetryM.addData("Detected motif pattern", penguinsCamera.getHuskyLensPattern());
-        penguinsCamera.logVision(telemetryM);
         telemetryM.update(telemetry);
 
     }
@@ -388,8 +387,8 @@ public class CompetitionTeleOp extends OpMode {
 
     // ....... Z-TARGETING METHODS .......
     public TargetHeading ZTargetCalculations(double headingOffset) {
-        double desiredHeadingDegrees = ratioOfSidesToHeading(goalPos.getX(DistanceUnit.INCH) - robotX,
-                                                             goalPos.getY(DistanceUnit.INCH) - robotY);
+        double desiredHeadingDegrees = ratioOfSidesToHeading(goalPose.getX() - robotX,
+                                                             goalPose.getY() - robotY);
         // By default, the intake is the front of the robot. To change that, an offset can be applied here
         return determineRotationDirection(Math.toDegrees(headingRadians) + headingOffset, desiredHeadingDegrees);
     }

@@ -10,7 +10,7 @@ import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous
+@Autonomous(name = "LeaveAuto", group = "Auto")
 public class DriveOffAuto extends LinearOpMode {
 
     // NOTE: The following method call is a way to "press STOP" via code:    requestOpModeStop()
@@ -63,12 +63,12 @@ public class DriveOffAuto extends LinearOpMode {
 
         // Set the robot's starting position and then set the static variable to null
         //  Null tells TeleOp to just read from pinpoint, which will have updated with the robot's position at the end of autonomous
-        pinpoint.setPosition(AALocationChooser.chosenStartingPos);
-        AALocationChooser.chosenStartingPos = null;
+        pinpoint.setPosition(PoseConverter.poseToPose2D(LocationChooser.chosenStartingPose));
+        LocationChooser.chosenStartingPose = null;
 
 
         // Display the chosen starting location just as confirmation for the drivers
-        telemetry.addData("Location", AALocationChooser.chosenStartingLocation);
+        telemetry.addData("Location", LocationChooser.chosenStartingLocation);
         telemetry.update();
 
         waitForStart();
@@ -76,13 +76,13 @@ public class DriveOffAuto extends LinearOpMode {
         if (opModeIsActive()) {
 
             // Start strafing
-            if (AALocationChooser.chosenStartingLocation == AALocationChooser.StartingLocation.BLUE_GOAL) {
+            if (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.BLUE_GOAL) {
                 // Strafe diagonally left
                 mecanumDriveCode(1, -1, 0);
-            } else if (AALocationChooser.chosenStartingLocation == AALocationChooser.StartingLocation.BLUE_WALL) {
+            } else if (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.BLUE_WALL) {
                 // Strafe straight left
                 mecanumDriveCode(0, -1, 0);
-            } else if (AALocationChooser.chosenStartingLocation == AALocationChooser.StartingLocation.RED_GOAL) {
+            } else if (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.RED_GOAL) {
                 // Strafe diagonally right
                 mecanumDriveCode(1, 1, 0);
             } else {

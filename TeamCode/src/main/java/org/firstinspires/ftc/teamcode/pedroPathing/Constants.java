@@ -36,8 +36,7 @@ public class Constants {
                     0,
                     0,
                     0.6,
-                    0.001
-            ));
+                    0.001));
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)

@@ -11,8 +11,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous
-public class AutoTest extends OpMode {
+@Autonomous(name = "GoalAuto", group = "Auto")
+public class GoalAutonomous extends OpMode {
 
     public Follower follower;
     private int pathState;
@@ -50,8 +50,8 @@ public class AutoTest extends OpMode {
     public void init() {
 
         // Mirror coordinates across the x-Axis if the autonomous is run on the Red side
-        if (AALocationChooser.chosenStartingLocation == AALocationChooser.StartingLocation.RED_GOAL ||
-            AALocationChooser.chosenStartingLocation == AALocationChooser.StartingLocation.RED_WALL) {
+        if (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.RED_GOAL ||
+            LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.RED_WALL) {
             startPose = startPose.mirror();
             launchPose = launchPose.mirror();
             intake1ReadyPose = intake1ReadyPose.mirror();
@@ -68,8 +68,13 @@ public class AutoTest extends OpMode {
         buildPaths();
         follower.setStartingPose(startPose);
 
+        // Initialize external systems
         penguinsLauncher.init(hardwareMap);
-        AALocationChooser.chosenStartingPos = null;
+        penguinsCamera.init(hardwareMap);
+
+        // Set the starting pose to null so that TeleOp will pick up with
+        //  the Pinpoint position where this auto ends off
+        LocationChooser.chosenStartingPose = null;
     }
 
     @Override
