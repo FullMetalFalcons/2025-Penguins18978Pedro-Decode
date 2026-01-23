@@ -22,11 +22,14 @@ public class AutoTest extends OpMode {
 
     LaunchSystem penguinsLauncher = new LaunchSystem();
 
-    private final Pose startPose = new Pose(21, 122, Math.toRadians(324));
-    private final Pose launchPose = new Pose(29, 116, Math.toRadians(324));
-    private final Pose intake1ReadyPose = new Pose(43, 84, Math.toRadians(180));
+    private final Pose startPose = new Pose(25, 127, Math.toRadians(324));
+    private final Pose launchPose = new Pose(33, 110, Math.toRadians(315));
+    private final Pose intake1ReadyPose = new Pose(48, 84, Math.toRadians(180));
     private final Pose intake1FinishPose = new Pose(24, 84, Math.toRadians(180));
-    private PathChain launchPath1, pickupPathReady1, pickupPath1, launchPath2;
+    private final Pose intake2ReadyPose = new Pose(48, 60, Math.toRadians(180));
+    private final Pose intake2FinishPose = new Pose(24, 60, Math.toRadians(180));
+
+    private PathChain launchPath1, intakePathReady1, intakePath1, launchPath2, intakePathReady2, intakePath2, launchPath3;
 
 
     @Override
@@ -70,30 +73,36 @@ public class AutoTest extends OpMode {
     }
 
     public void buildPaths() {
-
+        // ....... Launch 1
         launchPath1 = follower.pathBuilder()
-                .addPath(new BezierLine(startPose, launchPose))
-                .setConstantHeadingInterpolation(launchPose.getHeading())
-                .build();
+                .addPath(new BezierLine(  startPose, launchPose  ))
+                .setConstantHeadingInterpolation(launchPose.getHeading()).build();
 
-        pickupPathReady1 = follower.pathBuilder()
-                .addPath(new BezierCurve(launchPose,
-                                         new Pose(72,84),
-                                         intake1ReadyPose))
-                .setLinearHeadingInterpolation(launchPose.getHeading(), intake1ReadyPose.getHeading())
-                .build();
+        // ....... Intake 1
+        intakePathReady1 = follower.pathBuilder()
+                .addPath(new BezierLine(  launchPose, intake1ReadyPose  ))
+                .setLinearHeadingInterpolation(launchPose.getHeading(), intake1ReadyPose.getHeading()).build();
+        intakePath1 = follower.pathBuilder()
+                .addPath(new BezierLine(  intake1ReadyPose, intake1FinishPose  ))
+                .setTangentHeadingInterpolation().build();
 
-        pickupPath1 = follower.pathBuilder()
-                .addPath(new BezierLine(intake1ReadyPose, intake1FinishPose))
-                .setConstantHeadingInterpolation(intake1FinishPose.getHeading())
-                .build();
-
+        // ....... Launch 2
         launchPath2 = follower.pathBuilder()
-                .addPath(new BezierCurve(intake1FinishPose,
-                                         new Pose(42,103),
-                                         launchPose))
-                .setLinearHeadingInterpolation(intake1FinishPose.getHeading(), launchPose.getHeading())
-                .build();
+                .addPath(new BezierLine(  intake1FinishPose, launchPose  ))
+                .setLinearHeadingInterpolation(intake1FinishPose.getHeading(), launchPose.getHeading()).build();
+
+        // ....... Intake 2
+        intakePathReady2 = follower.pathBuilder()
+                .addPath(new BezierLine(  launchPose, intake2ReadyPose  ))
+                .setLinearHeadingInterpolation(launchPose.getHeading(), intake2ReadyPose.getHeading()).build();
+        intakePath2 = follower.pathBuilder()
+                .addPath(new BezierLine(  intake2ReadyPose, intake2FinishPose  ))
+                .setTangentHeadingInterpolation().build();
+
+        // ....... Launch 3
+        launchPath3 = follower.pathBuilder()
+                .addPath(new BezierLine(  intake2FinishPose, launchPose  ))
+                .setLinearHeadingInterpolation(intake2FinishPose.getHeading(), launchPose.getHeading()).build();
     }
 
     public void autonomousPathUpdate() {
@@ -101,6 +110,7 @@ public class AutoTest extends OpMode {
         // Autonomous state machine
         switch (pathState) {
             case 0:
+                // Wait for the starting delay to expire
                 if (delayTimer.seconds() > delaySeconds) {
                     // Begin the whole route
                     follower.followPath(launchPath1, true);
@@ -121,7 +131,7 @@ public class AutoTest extends OpMode {
 
                 if (!penguinsLauncher.isBusy()) {
                     // drive to the first line of balls
-                    follower.followPath(pickupPathReady1);
+                    follower.followPath(intakePathReady1);
                     pathState = 3;
                 }
                 break;
@@ -131,10 +141,9 @@ public class AutoTest extends OpMode {
                 if (!follower.isBusy()) {
                     // Intake the first line of balls
                     penguinsLauncher.setIntakePower(1);
-                    follower.followPath(pickupPath1, 0.2, true);
+                    follower.followPath(intakePath1, 0.2, true);
                     pathState = 4;
                 }
-
                 break;
             case 4:
                 /* Let the intake sequence play out */
@@ -157,6 +166,44 @@ public class AutoTest extends OpMode {
                 break;
             case 6:
                 /* Let the second launch sequence play out */
+
+                if (!penguinsLauncher.isBusy()) {
+                    // Drive to the second line of balls
+                    follower.followPath(intakePathReady2);
+                    pathState = 7;
+                }
+                break;
+            case 7:
+                /* Let the robot get to the second line of balls */
+
+                if (!follower.isBusy()) {
+                    // Intake the second line of balls
+                    penguinsLauncher.setIntakePower(1);
+                    follower.followPath(intakePath2, 0.2, true);
+                    pathState = 8;
+                }
+                break;
+            case 8:
+                /* Let the intake sequence play out */
+
+                if (!follower.isBusy()) {
+                    // Stop the intake and drive back to launch position
+                    penguinsLauncher.setIntakePower(0);
+                    follower.followPath(launchPath3, true);
+                    pathState = 9;
+                }
+                break;
+            case 9:
+                /* Let the robot get back to launch position */
+
+                if (!follower.isBusy()) {
+                    // Begin the third launch sequence
+                    penguinsLauncher.fireBalls(3);
+                    pathState = 10;
+                }
+                break;
+            case 10:
+                /* Let the third launch sequence play out */
 
                 if (!penguinsLauncher.isBusy()) {
                     // Quit out of the state machine and end the route
