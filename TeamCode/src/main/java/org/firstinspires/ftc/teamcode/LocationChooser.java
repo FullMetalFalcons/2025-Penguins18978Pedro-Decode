@@ -18,7 +18,7 @@ public class LocationChooser extends OpMode {
     // Define possible starting coordinate positions
     // Use PedroPathing's Pose class because it is easier to mirror across the field
     public static final Pose BLUE_GOAL_STARTING_POSE = new Pose(21, 122, Math.toRadians(324));
-    public static final Pose BLUE_WALL_STARTING_POSE = new Pose(49, 8, Math.toRadians(90));
+    public static final Pose BLUE_WALL_STARTING_POSE = new Pose(55, 9, Math.toRadians(90));
     // x:123, y:122, heading:216
     public static final Pose RED_GOAL_STARTING_POSE = BLUE_GOAL_STARTING_POSE.mirror();
     // x:95, y:8, heading:90

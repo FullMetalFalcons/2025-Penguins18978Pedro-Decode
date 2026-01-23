@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.pedropathing.ftc.PoseConverter;
+import com.pedropathing.geometry.PedroCoordinates;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -63,7 +65,7 @@ public class DriveOffAuto extends LinearOpMode {
 
         // Set the robot's starting position and then set the static variable to null
         //  Null tells TeleOp to just read from pinpoint, which will have updated with the robot's position at the end of autonomous
-        pinpoint.setPosition(PoseConverter.poseToPose2D(LocationChooser.chosenStartingPose));
+        pinpoint.setPosition(PoseConverter.poseToPose2D(LocationChooser.chosenStartingPose, PedroCoordinates.INSTANCE));
         LocationChooser.chosenStartingPose = null;
 
 

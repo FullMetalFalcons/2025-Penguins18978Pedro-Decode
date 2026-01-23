@@ -2,12 +2,13 @@ package org.firstinspires.ftc.teamcode;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.pedropathing.ftc.PoseConverter;
+import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -199,7 +200,7 @@ public class CompetitionTeleOp extends OpMode {
         }
         // Autonomous programs set startingPose to null
         if (startingPose != null) {
-            pinpoint.setPosition(PoseConverter.poseToPose2D(startingPose));
+            pinpoint.setPosition(PoseConverter.poseToPose2D(startingPose, PedroCoordinates.INSTANCE));
         }
     }
 
