@@ -12,7 +12,7 @@ import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "LeaveAuto", group = "Auto")
+@Autonomous(name = "LeaveAutonomous", group = "Auto")
 public class DriveOffAuto extends LinearOpMode {
 
     // NOTE: The following method call is a way to "press STOP" via code:    requestOpModeStop()

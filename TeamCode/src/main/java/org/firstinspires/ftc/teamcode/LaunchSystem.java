@@ -46,7 +46,7 @@ public class LaunchSystem {
         --------  *  --------  *  ------
          Minute      Rotation     Second
      */
-    int velocityRpm = 3000;
+    int velocityRpm = 3100;
 
 
     /** Initializes motors, sets motor directions, and sets up PIDF constants for launch-related motors

@@ -12,7 +12,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "GoalAuto", group = "Auto")
+@Autonomous(name = "GoalAutonomous", group = "Auto")
 public class GoalAutonomous extends OpMode {
 
     public Follower follower;
@@ -32,14 +32,12 @@ public class GoalAutonomous extends OpMode {
     private Pose launchPose = new Pose(33, 110, Math.toRadians(315));
 
     private Pose intake1ControlPoint = new Pose(48, 110);
-    private Pose intake1ReadyPose = new Pose(48, 84, Math.toRadians(180));
-
-    private Pose intake1FinishPose = new Pose(24, 84, Math.toRadians(180));
+    private Pose intake1ReadyPose =  new Pose(44, 84, Math.toRadians(180));
+    private Pose intake1FinishPose = new Pose(22, 84, Math.toRadians(180));
 
     private Pose intake2ControlPoint = new Pose(51, 107);
-    private Pose intake2ReadyPose = new Pose(48, 60, Math.toRadians(180));
-
-    private Pose intake2FinishPose = new Pose(24, 60, Math.toRadians(180));
+    private Pose intake2ReadyPose =  new Pose(44, 60, Math.toRadians(180));
+    private Pose intake2FinishPose = new Pose(22, 60, Math.toRadians(180));
 
     private Pose launch3ControlPoint = new Pose(41, 57);
     private Pose leavePose = new Pose(40, 118, Math.toRadians(315));
@@ -56,12 +54,12 @@ public class GoalAutonomous extends OpMode {
             startPose = startPose.mirror();
             launchPose = launchPose.mirror();
             intake1ReadyPose = intake1ReadyPose.mirror();
-              intake1ControlPoint = intake1ControlPoint.mirror();
+            intake1ControlPoint = intake1ControlPoint.mirror();
             intake1FinishPose = intake1FinishPose.mirror();
             intake2ReadyPose = intake2ReadyPose.mirror();
-              intake2ControlPoint = intake2ControlPoint.mirror();
+            intake2ControlPoint = intake2ControlPoint.mirror();
             intake2FinishPose = intake2FinishPose.mirror();
-              launch3ControlPoint = launch3ControlPoint.mirror();
+            launch3ControlPoint = launch3ControlPoint.mirror();
             leavePose = leavePose.mirror();
         }
 
@@ -183,7 +181,7 @@ public class GoalAutonomous extends OpMode {
                 if (!follower.isBusy()) {
                     // Intake the first line of balls
                     penguinsLauncher.setIntakePower(1);
-                    follower.followPath(intakePath1, 0.25, true);
+                    follower.followPath(intakePath1, 0.3, true);
                     pathState = 4;
                 }
                 break;
@@ -221,7 +219,7 @@ public class GoalAutonomous extends OpMode {
                 if (!follower.isBusy()) {
                     // Intake the second line of balls
                     penguinsLauncher.setIntakePower(1);
-                    follower.followPath(intakePath2, 0.25, true);
+                    follower.followPath(intakePath2, 0.3, true);
                     pathState = 8;
                 }
                 break;

@@ -11,7 +11,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous
+@Autonomous(name = "Test RedGoalAuto")
 public class RedGoalAuto extends OpMode {
 
     LaunchSystem penguinsLauncher = new LaunchSystem();
