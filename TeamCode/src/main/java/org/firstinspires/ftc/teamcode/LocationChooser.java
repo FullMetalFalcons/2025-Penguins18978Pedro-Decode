@@ -32,6 +32,15 @@ public class LocationChooser extends OpMode {
     public static double chosenDriverHeading = 180;
     private int locationNumber = 1;
 
+
+
+    // Menu control variables
+    double lastLeftStickY1;
+    double lastLeftStickY2;
+    boolean upWasInputted;
+    boolean downWasInputted;
+    final double STICK_THRESHOLD = 0.5;
+
     // Runs once when INIT is pressed
     @Override
     public void init() {
@@ -44,12 +53,13 @@ public class LocationChooser extends OpMode {
     @Override
     public void init_loop() {
 
-        // Allow the menu to be navigated via the dpad
-        if (gamepad1.dpadDownWasPressed()) {
+        // Allow the menu to be navigated via the dpad or joystick
+        updateInputs();
+        if (downWasInputted) {  // Pressing down increases number because the order is   1 -> 2 -> 3 -> 4
             locationNumber ++;
             if (locationNumber > 4) locationNumber = 1;
         }
-        if (gamepad1.dpadUpWasPressed()) {
+        if (upWasInputted) {    // Pressing up decreases number because the order is   1 -> 2 -> 3 -> 4
             locationNumber --;
             if (locationNumber < 1) locationNumber = 4;
         }
@@ -114,6 +124,22 @@ public class LocationChooser extends OpMode {
     private String menuLine(String text, int number) {
         String selectorArrow = (number == locationNumber) ? "> " : "";
         return selectorArrow + text;
+    }
+
+    private void updateInputs() {
+        // Record input edge detection for both gamepads' joysticks
+        boolean joystickWasTiltedUp = (-gamepad1.left_stick_y > STICK_THRESHOLD && lastLeftStickY1 < STICK_THRESHOLD) ||
+                                      (-gamepad2.left_stick_y > STICK_THRESHOLD && lastLeftStickY2 < STICK_THRESHOLD);
+
+        boolean joystickWasTiltedDown = (-gamepad1.left_stick_y < -STICK_THRESHOLD && lastLeftStickY1 > -STICK_THRESHOLD) ||
+                                      (-gamepad2.left_stick_y < -STICK_THRESHOLD && lastLeftStickY2 > -STICK_THRESHOLD);
+
+        // Factor in all methods of input (both joysticks, both D-pads)
+        upWasInputted =   joystickWasTiltedUp   || gamepad1.dpadUpWasPressed()   || gamepad2.dpadUpWasPressed();
+        downWasInputted = joystickWasTiltedDown || gamepad1.dpadDownWasPressed() || gamepad2.dpadDownWasPressed();
+
+        lastLeftStickY1 = -gamepad1.left_stick_y;
+        lastLeftStickY2 = -gamepad2.left_stick_y;
     }
 
 } // end class

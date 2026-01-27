@@ -1,12 +1,12 @@
 package org.firstinspires.ftc.teamcode;
 
+import org.firstinspires.ftc.robotcore.external.JavaUtil;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 
-import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.ftc.PoseConverter;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
@@ -17,20 +17,19 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 
-import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
+import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 
 import java.text.DecimalFormat;
 
 @TeleOp(name = "TeleOp", group = "OpModes")
-@Configurable
 public class CompetitionTeleOp extends OpMode {
 
     // Declare motors, servos, sensors, imus, etc.
     DcMotorEx motorLF, motorRF, motorLB, motorRB;
     GoBildaPinpointDriver pinpoint;
-    NormalizedColorSensor colorSensor;
-    Servo light1, light2;
+    RevColorSensorV3 colorSensor;
+    Servo light1;
 
     // Create a telemetry manager so that telemetry shows up on the Panels dashboard
     TelemetryManager telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
@@ -38,6 +37,7 @@ public class CompetitionTeleOp extends OpMode {
     // Create instances of any systems that need to be used
     LaunchSystem penguinsLauncher = new LaunchSystem();
     CameraSystem penguinsCamera = new CameraSystem();
+    ColorSystem penguinsColorSensor = new ColorSystem();
 
 
     int loopsOfFeederMotion;
@@ -70,13 +70,7 @@ public class CompetitionTeleOp extends OpMode {
     public boolean inPosition = false;
     public boolean inPositionPark = false;
 
-    // Color sensor variables
-    public enum SensedColors {
-        PURPLE,
-        GREEN,
-        UNKNOWN
-    }
-    public static double colorSensorGain = 5; // static so that it can be tuned via Panels
+    ColorSystem.SensedColors artifactColor = ColorSystem.SensedColors.UNKNOWN;
 
 
     // Create a decimal format for displaying values to telemetry with only a few decimal places visible
@@ -114,7 +108,6 @@ public class CompetitionTeleOp extends OpMode {
 
         // Setup other motors
         light1 = hardwareMap.servo.get("light1");
-        light2 = hardwareMap.servo.get("light2");
 
         // Reverse the motors based on constants file
         motorLF.setDirection(Constants.driveConstants.leftFrontMotorDirection);
@@ -136,10 +129,7 @@ public class CompetitionTeleOp extends OpMode {
         // Initialize external systems
         penguinsLauncher.init(hardwareMap);
         penguinsCamera.init(hardwareMap);
-
-        // Color sensor setup
-        colorSensor = hardwareMap.get(NormalizedColorSensor.class,"color_sensor");
-
+        penguinsColorSensor.init(hardwareMap);
 
         // Pinpoint setup
         String pinpointName = Constants.localizerConstants.hardwareMapName;
@@ -318,10 +308,20 @@ public class CompetitionTeleOp extends OpMode {
 
 
         // ....... LED LIGHT CODE .......
-        indicatorLightCode();
+        //indicatorLightCode();
 
-
-
+        artifactColor = penguinsColorSensor.getSensedColor();
+        switch (artifactColor) {
+            case PURPLE:
+                light1.setPosition(0.7);
+                break;
+            case GREEN:
+                light1.setPosition(0.5);
+                break;
+            case UNKNOWN:
+                light1.setPosition(0.0);
+                break;
+        }
 
 
         //telemetry.addData("Label", "Information");
@@ -335,7 +335,6 @@ public class CompetitionTeleOp extends OpMode {
         telemetryM.addData("Flywheel1 error", Math.round( flywheelErrorL ));
         telemetryM.addData("Flywheel2 error", Math.round( flywheelErrorR ));
         telemetryM.addData("Error difference", Math.round( flywheelErrorL - flywheelErrorR ));
-        getSensedColor();
 
         telemetryM.addData("Detected motif pattern", penguinsCamera.getHuskyLensPattern());
         telemetryM.update(telemetry);
@@ -476,7 +475,6 @@ public class CompetitionTeleOp extends OpMode {
             }
         }
         light1.setPosition(lightColor);
-        light2.setPosition(lightColor);
 
         // Toggle alliance color
         if (gamepad1.backWasPressed()) {
@@ -505,20 +503,6 @@ public class CompetitionTeleOp extends OpMode {
             inPositionPark = false;
             inPosition = false;
         }
-    }
-
-    // ....... COLOR SENSOR METHODS .......
-    public SensedColors getSensedColor() {
-
-        // Read the direct RGB output of the color sensor
-        NormalizedRGBA rawColors = colorSensor.getNormalizedColors();
-        telemetryM.addLine("Sensor red: " + formatter.format( rawColors.red ) + " | normalized: " + formatter.format( rawColors.red / rawColors.alpha ));
-        telemetryM.addLine("Sensor green: " + formatter.format( rawColors.green ) + " | normalized: " + formatter.format( rawColors.green / rawColors.alpha ));
-        telemetryM.addLine("Sensor blue: " + formatter.format( rawColors.blue ) + " | normalized: " + formatter.format( rawColors.blue / rawColors.alpha ));
-
-        // TODO: Set RGB values for purple and green
-        // TODO: Return actual detected color
-        return SensedColors.UNKNOWN;
     }
 
 } // end class

@@ -4,8 +4,6 @@ import com.bylazar.telemetry.TelemetryManager;
 import com.qualcomm.hardware.dfrobot.HuskyLens;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
-
 public class CameraSystem {
 
     // Declare the HuskyLens

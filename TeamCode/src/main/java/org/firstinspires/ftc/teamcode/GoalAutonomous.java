@@ -87,6 +87,7 @@ public class GoalAutonomous extends OpMode {
             delaySeconds -= 0.5;
         }
         telemetry.addData("Delay in seconds", delaySeconds);
+        telemetry.addData("Location", LocationChooser.chosenStartingLocation);
         telemetry.update();
 
     }
