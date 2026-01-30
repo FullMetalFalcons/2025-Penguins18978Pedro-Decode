@@ -29,18 +29,18 @@ public class GoalAutonomous extends OpMode {
 
     // Define important coordinate locations for the Blue side of the field
     private Pose startPose = new Pose(16, 113, 0);
-    private Pose launchPose = new Pose(33, 110, Math.toRadians(315));
+    private Pose launchPose = LocationChooser.BLUE_LAUNCH_POSE;
 
-    private Pose intake1ControlPoint = new Pose(48, 110);
+    private Pose intake1ControlPoint = new Pose(48, 104);
     private Pose intake1ReadyPose =  new Pose(44, 84, Math.toRadians(180));
-    private Pose intake1FinishPose = new Pose(22, 84, Math.toRadians(180));
+    private Pose intake1FinishPose = new Pose(16, 84, Math.toRadians(180));
 
     private Pose intake2ControlPoint = new Pose(51, 107);
     private Pose intake2ReadyPose =  new Pose(44, 60, Math.toRadians(180));
-    private Pose intake2FinishPose = new Pose(22, 60, Math.toRadians(180));
+    private Pose intake2FinishPose = new Pose(16, 60, Math.toRadians(180));
 
-    private Pose launch3ControlPoint = new Pose(41, 57);
-    private Pose leavePose = new Pose(40, 118, Math.toRadians(315));
+    private Pose launch3ControlPoint = new Pose(55, 58);
+    private Pose leavePose = new Pose(45, 113, Math.toRadians(315));
 
     private PathChain launchPath1, intakePathReady1,intakePath1, launchPath2, intakePathReady2,intakePath2, launchPath3, leavePath;
 
@@ -52,7 +52,7 @@ public class GoalAutonomous extends OpMode {
         if (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.RED_GOAL ||
             LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.RED_WALL) {
             startPose = startPose.mirror();
-            launchPose = launchPose.mirror();
+            launchPose = LocationChooser.RED_LAUNCH_POSE;
             intake1ReadyPose = intake1ReadyPose.mirror();
             intake1ControlPoint = intake1ControlPoint.mirror();
             intake1FinishPose = intake1FinishPose.mirror();

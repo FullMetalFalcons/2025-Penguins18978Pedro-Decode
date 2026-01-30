@@ -24,11 +24,16 @@ public class LocationChooser extends OpMode {
 
     // Define goal positions for Z-Targeting System
     public static final Pose BLUE_GOAL_POSE = new Pose(10, 137);
-    public static final Pose RED_GOAL_POSE =  BLUE_GOAL_POSE.mirror();
+    public static final Pose RED_GOAL_POSE = BLUE_GOAL_POSE.mirror();
+
+    // Define launch positions for Autonomous and TeleOp alignment
+    public static final Pose BLUE_LAUNCH_POSE = new Pose(38, 105, Math.toRadians(315));
+    public static final Pose RED_LAUNCH_POSE = BLUE_LAUNCH_POSE.mirror();
 
     public static StartingLocation chosenStartingLocation = StartingLocation.BLUE_GOAL;
     public static Pose chosenStartingPose = BLUE_GOAL_STARTING_POSE;
     public static Pose chosenGoalPose = BLUE_GOAL_POSE;
+    public static Pose chosenLaunchPose = BLUE_LAUNCH_POSE;
     public static double chosenDriverHeading = 180;
     private int locationNumber = 1;
 
@@ -104,9 +109,11 @@ public class LocationChooser extends OpMode {
         // Setup goal and driver location based on alliance color
         if (chosenStartingLocation == StartingLocation.BLUE_GOAL || chosenStartingLocation == StartingLocation.BLUE_WALL) {
             chosenGoalPose = BLUE_GOAL_POSE;
+            chosenLaunchPose = BLUE_LAUNCH_POSE;
             chosenDriverHeading = 180;
         } else {
             chosenGoalPose = RED_GOAL_POSE;
+            chosenLaunchPose = RED_LAUNCH_POSE;
             chosenDriverHeading = 0;
         }
 

@@ -37,6 +37,12 @@ public class LaunchSystem {
     public static double FLYWHEEL_F = 13.0;
     public static double FLYWHEEL_P = 200.0;
 
+    public static double INTAKE_SECONDS = 0.3;
+    public static double SPIN_UP_MIN_SECONDS = 0.3;
+    public static double SPIN_UP_MAX_SECONDS = 1.0;
+    public static double FEEDER_UP_SECONDS = 0.2;
+    public static double FOLLOW_THROUGH_SECONDS = 0.2;
+
 
     // Unit conversion constants
     final double TICKS_PER_ROTATION = 28;
@@ -46,7 +52,7 @@ public class LaunchSystem {
         --------  *  --------  *  ------
          Minute      Rotation     Second
      */
-    int velocityRpm = 3100;
+    int velocityRpm = 2700;
 
 
     /** Initializes motors, sets motor directions, and sets up PIDF constants for launch-related motors
@@ -88,7 +94,7 @@ public class LaunchSystem {
                 // Intake the next ball and begin spinning up the flywheels
                 setLauncherVelocity(velocityRpm);
                 intake.setPower(1);
-                if (stateTimer.seconds() > 0.3) {
+                if (stateTimer.seconds() > INTAKE_SECONDS) {
                     // Stop the intake and switch to the next state
                     setState(LauncherState.PREPARE);
                     intake.setPower(0);
@@ -97,15 +103,15 @@ public class LaunchSystem {
             case PREPARE:
                 // Wait for the flywheels to finish spinning up
                 // Also wait a mandatory pause to allow the ball to settle
-                if (((getFlywheelError(launchL) < 80 && getFlywheelError(launchR) < 80) || stateTimer.seconds() > 2.0)
-                                                                                        && stateTimer.seconds() > 0.5) {
+                if (((getFlywheelError(launchL) < 80 && getFlywheelError(launchR) < 80) || stateTimer.seconds() > SPIN_UP_MAX_SECONDS)
+                                                                                        && stateTimer.seconds() > SPIN_UP_MIN_SECONDS) {
                     setState(LauncherState.LAUNCH);
                 }
                 break;
             case LAUNCH:
                 // Feed a ball into the flywheels and wait for the servo to finish moving
                 feeder.setPosition(FEEDER_UP);
-                if (stateTimer.seconds() > 0.5) {
+                if (stateTimer.seconds() > FEEDER_UP_SECONDS) {
                     // Mark that a ball has been fired and reset the feeder
                     ballsToFire --;
                     feeder.setPosition(FEEDER_DOWN);
@@ -121,7 +127,7 @@ public class LaunchSystem {
                 break;
             case FOLLOW_THROUGH:
                 // Keep the flywheels spinning for a little longer to ensure that the last ball fires properly
-                if (stateTimer.seconds() > 0.5) {
+                if (stateTimer.seconds() > FOLLOW_THROUGH_SECONDS) {
                     setLauncherVelocity(0);
                     setState(LauncherState.IDLE);
                 }

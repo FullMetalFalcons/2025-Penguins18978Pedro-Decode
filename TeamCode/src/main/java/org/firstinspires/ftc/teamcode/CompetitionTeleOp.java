@@ -1,15 +1,21 @@
 package org.firstinspires.ftc.teamcode;
 
-import org.firstinspires.ftc.robotcore.external.JavaUtil;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 
+import java.util.function.Supplier;
+import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.PoseConverter;
+import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.HeadingInterpolator;
+import com.pedropathing.paths.Path;
+import com.pedropathing.paths.PathChain;
+
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -39,25 +45,27 @@ public class CompetitionTeleOp extends OpMode {
     CameraSystem penguinsCamera = new CameraSystem();
     ColorSystem penguinsColorSensor = new ColorSystem();
 
+    // PedroPathing follower declarations
+    private Follower follower;
+    private Supplier<PathChain> launchPath;
+
 
     int loopsOfFeederMotion;
     double flywheelErrorL;
     double flywheelErrorR;
-
-    // Declare and/or initialize other variables
     boolean intakeIsActive;
 
     double headingFieldCentric;
     double headingRadians;
     double robotX;
     double robotY;
-
     boolean fieldCentricInUse = true;
-    boolean slowModeInUse = false;
 
     double driverHeadingDegrees;
     Pose startingPose;
+    Pose launchPose;
     Pose goalPose;
+
 
     // Indicator Light constants
     public final double LED_RED = 0.279;
@@ -130,6 +138,7 @@ public class CompetitionTeleOp extends OpMode {
         penguinsLauncher.init(hardwareMap);
         penguinsCamera.init(hardwareMap);
         penguinsColorSensor.init(hardwareMap);
+        follower = Constants.createFollower(hardwareMap);
 
         // Pinpoint setup
         String pinpointName = Constants.localizerConstants.hardwareMapName;
@@ -153,6 +162,14 @@ public class CompetitionTeleOp extends OpMode {
         pinpoint.setOffsets(xOffset, yOffset, DistanceUnit.INCH);
         pinpoint.setEncoderResolution(resolution);
 
+
+        // Set poses and variables that depend upon the robot's starting location
+        setLocationSpecificInformation();
+        launchPath = () -> follower.pathBuilder() // Lazy Curve Generation, which can happen on the fly
+                .addPath(new Path(new BezierLine(follower::getPose, launchPose)))
+                .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, launchPose.getHeading(), 0.8))
+                .build();
+
     }
 
     // Runs continuously after INIT is pressed and before START is pressed
@@ -169,29 +186,7 @@ public class CompetitionTeleOp extends OpMode {
     @Override
     public void start() {
 
-        // Set the alliance color (for the LED light)
-        if (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.BLUE_GOAL ||
-                LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.BLUE_WALL) {
-            isBlue = true;
-        } else {
-            isBlue = false;
-        }
-
-        // Import robot starting location from the Location Chooser, unless B is pressed (override for practice)
-        if (gamepad1.b) {
-            pinpoint.resetPosAndIMU();
-            startingPose = new Pose(0, 0, 0);
-            goalPose = startingPose;
-            driverHeadingDegrees = 0;
-        } else {
-            startingPose = LocationChooser.chosenStartingPose;
-            goalPose = LocationChooser.chosenGoalPose;
-            driverHeadingDegrees = LocationChooser.chosenDriverHeading;
-        }
-        // Autonomous programs set startingPose to null
-        if (startingPose != null) {
-            pinpoint.setPosition(PoseConverter.poseToPose2D(startingPose, PedroCoordinates.INSTANCE));
-        }
+        //
     }
 
     // Runs continually after START is pressed and before STOP is pressed
@@ -201,9 +196,9 @@ public class CompetitionTeleOp extends OpMode {
         readFromPinpoint();
 
         // ....... MECANUM DRIVE CONTROLS .......
-        // Set the desired powers based on joystick inputs (-1 to 1)
-        double desiredForward = -gamepad1.left_stick_y;
-        double desiredStrafe = gamepad1.left_stick_x;
+        // Set the desired powers based on joystick inputs (or dpad, for slow mode)
+        double desiredForward = gamepad1.dpad_up ? 0.2 : (gamepad1.dpad_down ? -0.2 : -gamepad1.left_stick_y);
+        double desiredStrafe = gamepad1.dpad_right ? 0.2 : (gamepad1.dpad_left ? -0.2 : gamepad1.left_stick_x);
 
         double powerAngular = -gamepad1.right_stick_x;
         double powerForward = desiredForward;  // Assume field-centric is not being used
@@ -227,16 +222,7 @@ public class CompetitionTeleOp extends OpMode {
         }
 
         // Run the wheels using the desired powers
-        if (slowModeInUse) {
-            mecanumDriveCode(powerForward, powerStrafe, powerAngular, 0.4);
-        } else {
-            mecanumDriveCode(powerForward, powerStrafe, powerAngular, 1.0);
-        }
-
-        // Slow mode toggle
-        if (gamepad1.xWasPressed()) {
-            slowModeInUse = !slowModeInUse;
-        }
+        mecanumDriveCode(powerForward, powerStrafe, powerAngular, 1.0);
 
 
 
@@ -257,9 +243,9 @@ public class CompetitionTeleOp extends OpMode {
 
             // ....... VELOCITY MODIFICATION .......
             if (gamepad2.dpadUpWasPressed()) {
-                penguinsLauncher.changeTargetVelocity(100);
+                penguinsLauncher.changeTargetVelocity(50);
             } else if (gamepad2.dpadDownWasPressed()) {
-                penguinsLauncher.changeTargetVelocity(-100);
+                penguinsLauncher.changeTargetVelocity(-50);
             }
             telemetryM.addLine("Wheel Velocity: " + penguinsLauncher.velocityRpm + " RPM");
 
@@ -290,8 +276,8 @@ public class CompetitionTeleOp extends OpMode {
 
         }
 
-        // ......... LAUNCH SEQUENCE MACROS .......
-        if (gamepad2.aWasPressed()) {
+        // ....... LAUNCH SEQUENCE MACROS .......
+        if (gamepad2.yWasPressed()) {
             // Automatically launch one ball
             penguinsLauncher.fireBalls(1);
         }
@@ -299,11 +285,17 @@ public class CompetitionTeleOp extends OpMode {
             // Automatically launch three sequential balls
             penguinsLauncher.fireBalls(3);
         }
-        if (gamepad2.yWasPressed()) {
+        if (gamepad2.aWasPressed()) {
             // Emergency stop button to quit out of launching balls
             penguinsLauncher.stopActions();
         }
         penguinsLauncher.update();
+
+        // ....... PEDRO PATHING FOLLOWER CODE .......
+        if (gamepad1.x) {
+            follower.followPath(launchPath.get());
+            follower.update();
+        }
 
 
 
@@ -340,6 +332,41 @@ public class CompetitionTeleOp extends OpMode {
         telemetryM.update(telemetry);
 
     }
+
+
+    // Set all poses and other similar information using the results of the LocationChooser program
+    public void setLocationSpecificInformation() {
+
+        // Set the alliance color (for the LED light)
+        if (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.BLUE_GOAL ||
+                LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.BLUE_WALL) {
+            isBlue = true;
+        } else {
+            isBlue = false;
+        }
+
+        // Import robot starting location from the Location Chooser, unless B is pressed (override for practice)
+        if (gamepad1.b) {
+            pinpoint.resetPosAndIMU();
+            startingPose = new Pose(0, 0, 0);
+            goalPose = startingPose;
+            launchPose = startingPose;
+            driverHeadingDegrees = 0;
+        } else {
+            startingPose = LocationChooser.chosenStartingPose;
+            goalPose = LocationChooser.chosenGoalPose;
+            launchPose = LocationChooser.chosenLaunchPose;
+            driverHeadingDegrees = LocationChooser.chosenDriverHeading;
+        }
+        // Autonomous programs set startingPose to null
+        if (startingPose != null) {
+            pinpoint.setPosition(PoseConverter.poseToPose2D(startingPose, PedroCoordinates.INSTANCE));
+        }
+        // Set the follower's starting position based on the robot's current position, which is read from the Pinpoint
+        pinpoint.update();
+        follower.setStartingPose(PoseConverter.pose2DToPose(pinpoint.getPosition(), PedroCoordinates.INSTANCE));
+    }
+
 
     // Methods to easily set the attributes of all drive motors at once
     public void setDriveModes(DcMotor.RunMode mode) {
