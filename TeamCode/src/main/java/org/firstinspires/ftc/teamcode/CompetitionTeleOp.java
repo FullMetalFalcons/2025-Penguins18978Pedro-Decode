@@ -47,31 +47,38 @@ public class CompetitionTeleOp extends OpMode {
 
     // PedroPathing follower declarations
     private Follower follower;
-    private Supplier<PathChain> launchPath;
+    private Supplier<PathChain> launchPath;  // Supplier is a functional interface in java that does not accept any parameters, but returns a value, using .get()
+                                             //   This particular Supplier will return a PathChain and is implemented as a lamba function down below
 
-
+    // Declare variables to store debug values
     int loopsOfFeederMotion;
     double flywheelErrorL;
     double flywheelErrorR;
-    boolean intakeIsActive;
 
+    // Declare robot position variables
     double headingFieldCentric;
     double headingRadians;
     double robotX;
     double robotY;
-    boolean fieldCentricInUse = true;
 
+    // Declare booleans about the robot's current mode/state
+    boolean fieldCentricInUse = true;
+    boolean isAutoDriving = false;
+    boolean intakeIsActive = false;
+
+    // Declare variables to store information from the LocationChooser file
     double driverHeadingDegrees;
     Pose startingPose;
     Pose launchPose;
     Pose goalPose;
 
 
-    // Indicator Light constants
+    // Set Indicator Light constants
     public final double LED_RED = 0.279;
     public final double LED_BLUE = 0.611;
     public final double LED_GREEN = 0.5;
     public final double LED_YELLOW = 0.38;
+    public final double LED_PURPLE = 0.7;
 
     double lightColor;
     public boolean isBlue;
@@ -165,10 +172,15 @@ public class CompetitionTeleOp extends OpMode {
 
         // Set poses and variables that depend upon the robot's starting location
         setLocationSpecificInformation();
-        launchPath = () -> follower.pathBuilder() // Lazy Curve Generation, which can happen on the fly
+
+        // Create a PedroPathing route to get to the launch position from anywhere on the field
+        // Uses Lazy curve generation to allow for the route to change based on the robot's position in real time
+        launchPath = () -> follower.pathBuilder()
                 .addPath(new Path(new BezierLine(follower::getPose, launchPose)))
                 .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, launchPose.getHeading(), 0.8))
                 .build();
+            // This is the implementation of the Supplier from above
+            //  It is a lamba function that returns a new PathChain, with is created on the fly using the robot's current pose
 
     }
 
@@ -222,7 +234,9 @@ public class CompetitionTeleOp extends OpMode {
         }
 
         // Run the wheels using the desired powers
-        mecanumDriveCode(powerForward, powerStrafe, powerAngular, 1.0);
+        if (!isAutoDriving) {
+            mecanumDriveCode(powerForward, powerStrafe, powerAngular, 1.0);
+        }
 
 
 
@@ -292,9 +306,12 @@ public class CompetitionTeleOp extends OpMode {
         penguinsLauncher.update();
 
         // ....... PEDRO PATHING FOLLOWER CODE .......
+        if (gamepad1.xWasPressed()) follower.followPath(launchPath.get(), true);
         if (gamepad1.x) {
-            follower.followPath(launchPath.get());
+            isAutoDriving = true;
             follower.update();
+        } else {
+            isAutoDriving = false;
         }
 
 
@@ -305,10 +322,10 @@ public class CompetitionTeleOp extends OpMode {
         artifactColor = penguinsColorSensor.getSensedColor();
         switch (artifactColor) {
             case PURPLE:
-                light1.setPosition(0.7);
+                light1.setPosition(LED_PURPLE);
                 break;
             case GREEN:
-                light1.setPosition(0.5);
+                light1.setPosition(LED_GREEN);
                 break;
             case UNKNOWN:
                 light1.setPosition(0.0);
@@ -334,7 +351,7 @@ public class CompetitionTeleOp extends OpMode {
     }
 
 
-    // Set all poses and other similar information using the results of the LocationChooser program
+    /** Sets starting pose, goal pose, launch pose, alliance color, etc. using the results of the LocationChooser program */
     public void setLocationSpecificInformation() {
 
         // Set the alliance color (for the LED light)
@@ -382,6 +399,11 @@ public class CompetitionTeleOp extends OpMode {
         motorRB.setZeroPowerBehavior(behavior);
     }
 
+    /** Set the power of the drivetrain motors based on the desired powers in each direction
+     * @param forward desired power in the forward direction
+     * @param strafe desired power in the strafe direction
+     * @param angular desired power for rotating'
+     * @param speedPercent a value between 0 and 1 that is used to scale the final motor powers */
     public void mecanumDriveCode(double forward, double strafe, double angular, double speedPercent) {
         // Perform vector math to determine the desired powers for each wheel
         double powerLF = strafe + forward - angular;
@@ -403,6 +425,7 @@ public class CompetitionTeleOp extends OpMode {
     }
 
 
+    /** Update the robot's position and heading variables using the Pinpoint's data */
     public void readFromPinpoint() {
         pinpoint.update();
         headingRadians = pinpoint.getHeading(AngleUnit.RADIANS);
@@ -413,6 +436,10 @@ public class CompetitionTeleOp extends OpMode {
 
 
     // ....... Z-TARGETING METHODS .......
+    /** Performs all of the methods and operations needed to determine how the robot should turn to face towards the goal
+     * @param headingOffset the offset, in degrees, that should be added to define the part of the robot that should face the goal (ex. an offset of 180
+     * makes the back of the robot, where the launcher is, the new front that should face towards the goal
+     * @return a TargetHeading object that tells how the robot should turn to point towards the goal */
     public TargetHeading ZTargetCalculations(double headingOffset) {
         double desiredHeadingDegrees = ratioOfSidesToHeading(goalPose.getX() - robotX,
                                                              goalPose.getY() - robotY);
@@ -420,6 +447,10 @@ public class CompetitionTeleOp extends OpMode {
         return determineRotationDirection(Math.toDegrees(headingRadians) + headingOffset, desiredHeadingDegrees);
     }
 
+    /** Performs an operation similar to atan2 that takes the two legs of a right triangle and determines the angle of the hypotenuse
+     * @param X the length of the adjacent leg
+     * @param Y the length of the opposite leg
+     * @return the heading, in degrees, that the robot would need to have to be angled along the hypotenuse */
     public double ratioOfSidesToHeading(double X, double Y) {
         double freeHeading = 0.0;
         // If Y is zero, then the angle is purely horizontal
@@ -453,6 +484,9 @@ public class CompetitionTeleOp extends OpMode {
         return freeHeading;
     }
 
+    /** Determines the direction needed to turn for the robot to reach a desired heading
+     * @return a TargetHeading object that specifics the direction needed to turn and the
+     * difference in degrees between the desired heading and the current heading */
     public TargetHeading determineRotationDirection(double current, double target) {
         double currentCircularHeading = modPositive(current, 360);
         double targetHeading = modPositive(target, 360);
@@ -481,10 +515,11 @@ public class CompetitionTeleOp extends OpMode {
         }
     }
 
-    // Performs a mod operation but ensures the result will be positive
+    /** Performs a mod operation that can only return positive results */
     public double modPositive(double number, double divisor) {
         return ((number % divisor) + divisor) % divisor;
     }
+
 
     // ....... LED LIGHT COLOR SELECTION LOGIC ........
     public void indicatorLightCode() {
