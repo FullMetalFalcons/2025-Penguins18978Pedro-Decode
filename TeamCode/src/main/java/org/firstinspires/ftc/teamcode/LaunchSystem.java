@@ -42,6 +42,7 @@ public class LaunchSystem {
     public static double SPIN_UP_MAX_SECONDS = 1.0;
     public static double FEEDER_UP_SECONDS = 0.2;
     public static double FOLLOW_THROUGH_SECONDS = 0.2;
+    public boolean FLY_WHEELS_RUNNING = false;
 
 
     // Unit conversion constants
@@ -87,22 +88,28 @@ public class LaunchSystem {
             case IDLE:
                 // If balls are queued to be launched, then begin the launch process
                 if (ballsToFire > 0) {
-                    setState(LauncherState.LOAD);
+                    if (FLY_WHEELS_RUNNING) {
+                        setState(LauncherState.LAUNCH);
+                    }
+                    else {
+                        setState(LauncherState.LOAD);
+                    }
                 }
                 break;
             case LOAD:
                 // Intake the next ball and begin spinning up the flywheels
-                setLauncherVelocity(velocityRpm);
-                intake.setPower(1);
-                if (stateTimer.seconds() > INTAKE_SECONDS) {
-                    // Stop the intake and switch to the next state
-                    setState(LauncherState.PREPARE);
-                    intake.setPower(0);
-                }
+                    setLauncherVelocity(velocityRpm);
+                    intake.setPower(1);
+                    if (stateTimer.seconds() > INTAKE_SECONDS) {
+                        // Stop the intake and switch to the next state
+                        setState(LauncherState.PREPARE);
+                        intake.setPower(0);
+                    }
                 break;
             case PREPARE:
                 // Wait for the flywheels to finish spinning up
                 // Also wait a mandatory pause to allow the ball to settle
+
                 if (((getFlywheelError(launchL) < 80 && getFlywheelError(launchR) < 80) || stateTimer.seconds() > SPIN_UP_MAX_SECONDS)
                                                                                         && stateTimer.seconds() > SPIN_UP_MIN_SECONDS) {
                     setState(LauncherState.LAUNCH);
@@ -115,6 +122,7 @@ public class LaunchSystem {
                     // Mark that a ball has been fired and reset the feeder
                     ballsToFire --;
                     feeder.setPosition(FEEDER_DOWN);
+                    FLY_WHEELS_RUNNING = false;
 
                     // If more balls need to be launched, load in the next ball
                     // If no more balls are queued up, then end the sequence
