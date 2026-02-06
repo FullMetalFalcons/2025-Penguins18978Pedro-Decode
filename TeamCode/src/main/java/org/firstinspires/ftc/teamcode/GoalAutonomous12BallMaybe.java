@@ -40,7 +40,8 @@ public class GoalAutonomous12BallMaybe extends OpMode {
 
 
     private Pose launch3ControlPoint = new Pose(55, 58);
-    private Pose hitLever = new Pose(17, 78, Math.toRadians(180));
+    private Pose hitLever = new Pose(17, 75, Math.toRadians(180));
+    private Pose hitLeverControlPoint = new Pose(40, 80);
 
     private Pose intake3ReadyPose = new Pose(44, 36, Math.toRadians(180));
     private Pose intake3FinishPose = new Pose(18, 36, Math.toRadians(180));
@@ -127,7 +128,7 @@ public class GoalAutonomous12BallMaybe extends OpMode {
                 .addPath(new BezierLine(  intake1ReadyPose, intake1FinishPose  ))
                 .setTangentHeadingInterpolation().build();
         hitLever1 = follower.pathBuilder()
-                .addPath(new BezierLine(intake1FinishPose, hitLever))
+                .addPath(new BezierCurve(intake1FinishPose, hitLeverControlPoint, hitLever))
                 .setConstantHeadingInterpolation(hitLever.getHeading())
                 .build();
 
