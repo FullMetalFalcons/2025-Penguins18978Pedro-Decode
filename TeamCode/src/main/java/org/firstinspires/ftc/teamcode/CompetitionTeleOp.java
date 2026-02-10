@@ -145,7 +145,9 @@ public class CompetitionTeleOp extends OpMode {
         penguinsLauncher.init(hardwareMap);
         penguinsCamera.init(hardwareMap);
         penguinsColorSensor.init(hardwareMap);
+
         follower = Constants.createFollower(hardwareMap);
+        follower.startTeleopDrive(true);
 
         // Pinpoint setup
         String pinpointName = Constants.localizerConstants.hardwareMapName;
@@ -180,7 +182,7 @@ public class CompetitionTeleOp extends OpMode {
                 .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, launchPose.getHeading(), 0.8))
                 .build();
             // This is the implementation of the Supplier from above
-            //  It is a lamba function that returns a new PathChain, with is created on the fly using the robot's current pose
+            //  It is a lambda function that returns a new PathChain, which is created on the fly using the robot's current pose
 
     }
 
@@ -305,12 +307,20 @@ public class CompetitionTeleOp extends OpMode {
         }
         penguinsLauncher.update();
 
+
         // ....... PEDRO PATHING FOLLOWER CODE .......
-        if (gamepad1.xWasPressed()) follower.followPath(launchPath.get(), true);
+        // Only generate the path when X is first pressed down
+        if (gamepad1.xWasPressed()) {
+            follower.followPath(launchPath.get(), true);
+        }
+        // Continually follow the path for as long as X is held down
         if (gamepad1.x) {
             isAutoDriving = true;
             follower.update();
         } else {
+            // Start PedroPathing TeleOp just to set the motors back to brake mode
+            // By no longer calling .update(), we can still use our own TeleOp code
+            follower.startTeleopDrive(true);
             isAutoDriving = false;
         }
 

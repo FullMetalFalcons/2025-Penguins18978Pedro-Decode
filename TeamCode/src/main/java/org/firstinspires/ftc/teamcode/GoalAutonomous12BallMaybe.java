@@ -11,7 +11,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "GoalAutonomous12BallMaybe", group = "Auto")
+@Autonomous(name = "12BallGoalAutonomous", group = "Auto")
 public class GoalAutonomous12BallMaybe extends OpMode {
 
     public Follower follower;
@@ -34,19 +34,19 @@ public class GoalAutonomous12BallMaybe extends OpMode {
     private Pose intake1ReadyPose =  new Pose(44, 84, Math.toRadians(180));
     private Pose intake1FinishPose = new Pose(18, 84, Math.toRadians(180));
 
+    private Pose hitLeverPose = new Pose(17, 75, Math.toRadians(180));
+    private Pose hitLeverControlPoint = new Pose(40, 80);
+
     private Pose intake2ControlPoint = new Pose(51, 107);
     private Pose intake2ReadyPose =  new Pose(44, 60, Math.toRadians(180));
     private Pose intake2FinishPose = new Pose(18, 60, Math.toRadians(180));
 
-
     private Pose launch3ControlPoint = new Pose(55, 58);
-    private Pose hitLever = new Pose(17, 75, Math.toRadians(180));
-    private Pose hitLeverControlPoint = new Pose(40, 80);
 
     private Pose intake3ReadyPose = new Pose(44, 36, Math.toRadians(180));
     private Pose intake3FinishPose = new Pose(18, 36, Math.toRadians(180));
-    private Pose launch4ControlPoint = new Pose(55, 58);
 
+    private Pose launch4ControlPoint = new Pose(55, 58);
     private Pose leavePose = new Pose(45, 113, Math.toRadians(315));
 
     private PathChain launchPath1, intakePathReady1,intakePath1, launchPath2, intakePathReady2,intakePath2, launchPath3, intakePathReady3, intakePath3, launchPath4, leavePath, hitLever1;
@@ -67,6 +67,11 @@ public class GoalAutonomous12BallMaybe extends OpMode {
             intake2ControlPoint = intake2ControlPoint.mirror();
             intake2FinishPose = intake2FinishPose.mirror();
             launch3ControlPoint = launch3ControlPoint.mirror();
+            hitLeverPose = hitLeverPose.mirror();
+            hitLeverControlPoint = hitLeverControlPoint.mirror();
+            intake3ReadyPose = intake3ReadyPose.mirror();
+            intake3FinishPose = intake3FinishPose.mirror();
+            launch4ControlPoint = launch4ControlPoint.mirror();
             leavePose = leavePose.mirror();
         }
 
@@ -128,8 +133,8 @@ public class GoalAutonomous12BallMaybe extends OpMode {
                 .addPath(new BezierLine(  intake1ReadyPose, intake1FinishPose  ))
                 .setTangentHeadingInterpolation().build();
         hitLever1 = follower.pathBuilder()
-                .addPath(new BezierCurve(intake1FinishPose, hitLeverControlPoint, hitLever))
-                .setConstantHeadingInterpolation(hitLever.getHeading())
+                .addPath(new BezierCurve(intake1FinishPose, hitLeverControlPoint, hitLeverPose))
+                .setConstantHeadingInterpolation(hitLeverPose.getHeading())
                 .build();
 
         // ....... Launch 2
@@ -225,7 +230,7 @@ public class GoalAutonomous12BallMaybe extends OpMode {
                 if (!follower.isBusy()) {
                     // Stop the intake and drive back to launch position
                     penguinsLauncher.setIntakePower(0);
-                    penguinsLauncher.FLY_WHEELS_RUNNING = true;
+                    //penguinsLauncher.launcherPrepared = true;
                     penguinsLauncher.setLauncherVelocity(penguinsLauncher.velocityRpm);
                     follower.followPath(launchPath2, true);
                     pathState = 6;
@@ -236,7 +241,7 @@ public class GoalAutonomous12BallMaybe extends OpMode {
 
                 if (!follower.isBusy()) {
                     // Begin the second launch sequence
-                    penguinsLauncher.fireBalls(3);
+                    penguinsLauncher.fireBalls(3, true);
                     pathState = 7;
                 }
                 break;
@@ -265,7 +270,7 @@ public class GoalAutonomous12BallMaybe extends OpMode {
                 if (!follower.isBusy()) {
                     // Stop the intake and drive back to launch position
                     penguinsLauncher.setIntakePower(0);
-                    penguinsLauncher.FLY_WHEELS_RUNNING = true;
+                    //penguinsLauncher.launcherPrepared = true;
                     penguinsLauncher.setLauncherVelocity(penguinsLauncher.velocityRpm);
                     follower.followPath(launchPath3, true);
                     pathState = 10;
@@ -276,7 +281,7 @@ public class GoalAutonomous12BallMaybe extends OpMode {
 
                 if (!follower.isBusy()) {
                     // Begin the third launch sequence
-                    penguinsLauncher.fireBalls(3);
+                    penguinsLauncher.fireBalls(3, true);
                     pathState = 11;
                 }
                 break;
@@ -301,7 +306,7 @@ public class GoalAutonomous12BallMaybe extends OpMode {
             case 13:
                 if (!follower.isBusy()) {
                     penguinsLauncher.setIntakePower(0);
-                    penguinsLauncher.FLY_WHEELS_RUNNING = true;
+                    //penguinsLauncher.launcherPrepared = true;
                     penguinsLauncher.setLauncherVelocity(penguinsLauncher.velocityRpm);
                     follower.followPath(launchPath4, true);
                     pathState = 14;
@@ -309,7 +314,7 @@ public class GoalAutonomous12BallMaybe extends OpMode {
                 break;
             case 14:
                 if (!follower.isBusy()) {
-                    penguinsLauncher.fireBalls(3);
+                    penguinsLauncher.fireBalls(3, true);
                     pathState = 15;
                 }
                 break;

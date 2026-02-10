@@ -20,6 +20,7 @@ public class LaunchSystem {
     // State machine variables
     ElapsedTime stateTimer = new ElapsedTime();
     LauncherState currentState = LauncherState.IDLE;
+    boolean launcherPrepared = false;
     int ballsToFire = 0;
 
     public enum LauncherState {
@@ -42,7 +43,6 @@ public class LaunchSystem {
     public static double SPIN_UP_MAX_SECONDS = 1.0;
     public static double FEEDER_UP_SECONDS = 0.2;
     public static double FOLLOW_THROUGH_SECONDS = 0.2;
-    public boolean FLY_WHEELS_RUNNING = false;
 
 
     // Unit conversion constants
@@ -88,10 +88,11 @@ public class LaunchSystem {
             case IDLE:
                 // If balls are queued to be launched, then begin the launch process
                 if (ballsToFire > 0) {
-                    if (FLY_WHEELS_RUNNING) {
+                    // If the flywheels are already up to speed, skip the loading sequence
+                    //   and go straight to lifting the feeder and launching the ball
+                    if (launcherPrepared) {
                         setState(LauncherState.LAUNCH);
-                    }
-                    else {
+                    } else {
                         setState(LauncherState.LOAD);
                     }
                 }
@@ -122,7 +123,7 @@ public class LaunchSystem {
                     // Mark that a ball has been fired and reset the feeder
                     ballsToFire --;
                     feeder.setPosition(FEEDER_DOWN);
-                    FLY_WHEELS_RUNNING = false;
+                    launcherPrepared = false;
 
                     // If more balls need to be launched, load in the next ball
                     // If no more balls are queued up, then end the sequence
@@ -165,10 +166,22 @@ public class LaunchSystem {
         }
     }
 
-    /** Tell the state machine to load and launch a certain number of balls */
+    /** Tell the state machine to load and launch a certain number of balls
+     * @param numBalls the number of balls to queue up for launching */
     public void fireBalls(int numBalls) {
-        if (!isBusy()) {  ballsToFire = numBalls;  }
+        fireBalls(numBalls, false);
     }
+    /** Tell the state machine to load and launch a certain number of balls
+     * @param numBalls the number of balls to queue up for launching
+     * @param prepared if true, the first ball launched by the state machine will
+     * fire immediately and not wait for the flywheels to spin up or for the intake to run */
+    public void fireBalls(int numBalls, boolean prepared) {
+        if (!isBusy()) {
+            ballsToFire = numBalls;
+            launcherPrepared = prepared;
+        }
+    }
+
     public boolean isBusy() {
         return (currentState != LauncherState.IDLE) || (ballsToFire > 0);
     }
