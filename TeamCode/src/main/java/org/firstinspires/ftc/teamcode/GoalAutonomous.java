@@ -12,7 +12,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "GoalAutonomous", group = "Auto")
+@Autonomous(name = "9-GoalAutonomous", group = "Auto")
 public class GoalAutonomous extends OpMode {
 
     public Follower follower;
@@ -20,6 +20,7 @@ public class GoalAutonomous extends OpMode {
 
     ElapsedTime delayTimer = new ElapsedTime();
     ElapsedTime autoTimer = new ElapsedTime();
+    boolean shouldOpenGate = true;
     double delaySeconds = 0.0;
     final double AUTO_LENGTH_SECONDS = 30.0;
     final double AUTO_END_BUFFER_SECONDS = 1.0;
@@ -35,6 +36,9 @@ public class GoalAutonomous extends OpMode {
     private Pose intake1ReadyPose =  new Pose(44, 84, Math.toRadians(180));
     private Pose intake1FinishPose = new Pose(16, 84, Math.toRadians(180));
 
+    private Pose hitLeverPose = new Pose(17, 75, Math.toRadians(0));
+    private Pose hitLeverControlPoint = new Pose(40, 80);
+
     private Pose intake2ControlPoint = new Pose(51, 107);
     private Pose intake2ReadyPose =  new Pose(44, 60, Math.toRadians(180));
     private Pose intake2FinishPose = new Pose(16, 60, Math.toRadians(180));
@@ -42,7 +46,7 @@ public class GoalAutonomous extends OpMode {
     private Pose launch3ControlPoint = new Pose(55, 58);
     private Pose leavePose = new Pose(45, 113, Math.toRadians(315));
 
-    private PathChain launchPath1, intakePathReady1,intakePath1, launchPath2, intakePathReady2,intakePath2, launchPath3, leavePath;
+    private PathChain launchPath1, intakePathReady1,intakePath1, hitLever1, launchPath2, intakePathReady2,intakePath2, launchPath3, leavePath;
 
 
     @Override
@@ -56,6 +60,8 @@ public class GoalAutonomous extends OpMode {
             intake1ReadyPose = intake1ReadyPose.mirror();
             intake1ControlPoint = intake1ControlPoint.mirror();
             intake1FinishPose = intake1FinishPose.mirror();
+            hitLeverPose = hitLeverPose.mirror();
+            hitLeverControlPoint = hitLeverControlPoint.mirror();
             intake2ReadyPose = intake2ReadyPose.mirror();
             intake2ControlPoint = intake2ControlPoint.mirror();
             intake2FinishPose = intake2FinishPose.mirror();
@@ -86,7 +92,11 @@ public class GoalAutonomous extends OpMode {
         if (gamepad1.dpadDownWasPressed()) {
             delaySeconds -= 0.5;
         }
+        if (gamepad1.dpadRightWasPressed()) {
+            shouldOpenGate = !shouldOpenGate;
+        }
         telemetry.addData("Delay in seconds", delaySeconds);
+        telemetry.addData("Open Gate", shouldOpenGate);
         telemetry.addData("Location", LocationChooser.chosenStartingLocation);
         telemetry.update();
 
@@ -120,6 +130,10 @@ public class GoalAutonomous extends OpMode {
         intakePath1 = follower.pathBuilder()
                 .addPath(new BezierLine(  intake1ReadyPose, intake1FinishPose  ))
                 .setTangentHeadingInterpolation().build();
+        hitLever1 = follower.pathBuilder()
+                .addPath(new BezierCurve(  intake1FinishPose, hitLeverControlPoint, hitLeverPose  ))
+                .setConstantHeadingInterpolation(hitLeverPose.getHeading())
+                .build();
 
         // ....... Launch 2
         launchPath2 = follower.pathBuilder()
@@ -190,60 +204,81 @@ public class GoalAutonomous extends OpMode {
                 /* Let the intake sequence play out */
 
                 if (!follower.isBusy()) {
-                    // Stop the intake and drive back to launch position
-                    penguinsLauncher.setIntakePower(0);
-                    follower.followPath(launchPath2, true);
-                    pathState = 5;
+                    if (shouldOpenGate) {
+                        follower.followPath(hitLever1, 0.8, true);
+                        delayTimer.reset();
+                        pathState = 5;
+                    } else {
+                        pathState = 6;
+                    }
                 }
                 break;
             case 5:
+                /* Pause for the gate sequence */
+
+                // TODO: Fix bad coding - The delay should begin after the follower finishes moving the robot
+                if (!follower.isBusy() && delayTimer.seconds() > 3) {
+                    pathState = 6;
+                }
+                break;
+            case 6:
+                /* Let the intake sequence play out */
+
+                if (!follower.isBusy()) {
+                    // Stop the intake and drive back to launch position
+                    penguinsLauncher.setIntakePower(0);
+                    follower.followPath(launchPath2, true);
+                    pathState = 7;
+                }
+                break;
+            case 7:
                 /* Let the robot get back to launch position */
 
                 if (!follower.isBusy()) {
                     // Begin the second launch sequence
                     penguinsLauncher.fireBalls(3);
-                    pathState = 6;
+                    pathState = 8;
                 }
                 break;
-            case 6:
+            case 8:
                 /* Let the second launch sequence play out */
 
                 if (!penguinsLauncher.isBusy()) {
                     // Drive to the second line of balls
                     follower.followPath(intakePathReady2);
-                    pathState = 7;
+                    pathState = 9;
                 }
                 break;
-            case 7:
+            case 9:
                 /* Let the robot get to the second line of balls */
 
                 if (!follower.isBusy()) {
                     // Intake the second line of balls
                     penguinsLauncher.setIntakePower(1);
                     follower.followPath(intakePath2, 0.3, true);
-                    pathState = 8;
+                    pathState = 10;
                 }
                 break;
-            case 8:
+            case 10:
                 /* Let the intake sequence play out */
 
                 if (!follower.isBusy()) {
                     // Stop the intake and drive back to launch position
                     penguinsLauncher.setIntakePower(0);
                     follower.followPath(launchPath3, true);
-                    pathState = 9;
+                    pathState = 11;
                 }
                 break;
-            case 9:
+            case 11:
                 /* Let the robot get back to launch position */
 
                 if (!follower.isBusy()) {
                     // Begin the third launch sequence
                     penguinsLauncher.fireBalls(3);
-                    pathState = 10;
+                    pathState = 12;
                 }
                 break;
-            case 10:
+            case 12:
                 /* Let the third launch sequence play out */
 
                 // If the launch sequence is finished, or autonomous is about to end, move sideways for the Leave points

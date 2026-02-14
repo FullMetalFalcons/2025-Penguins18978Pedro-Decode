@@ -146,8 +146,8 @@ public class CompetitionTeleOp extends OpMode {
         penguinsCamera.init(hardwareMap);
         penguinsColorSensor.init(hardwareMap);
 
-        follower = Constants.createFollower(hardwareMap);
-        follower.startTeleopDrive(true);
+        //follower = Constants.createFollower(hardwareMap);
+        //follower.startTeleopDrive(true);
 
         // Pinpoint setup
         String pinpointName = Constants.localizerConstants.hardwareMapName;
@@ -177,10 +177,12 @@ public class CompetitionTeleOp extends OpMode {
 
         // Create a PedroPathing route to get to the launch position from anywhere on the field
         // Uses Lazy curve generation to allow for the route to change based on the robot's position in real time
+        /*
         launchPath = () -> follower.pathBuilder()
                 .addPath(new Path(new BezierLine(follower::getPose, launchPose)))
                 .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, launchPose.getHeading(), 0.8))
                 .build();
+         */
             // This is the implementation of the Supplier from above
             //  It is a lambda function that returns a new PathChain, which is created on the fly using the robot's current pose
 
@@ -310,6 +312,7 @@ public class CompetitionTeleOp extends OpMode {
 
         // ....... PEDRO PATHING FOLLOWER CODE .......
         // Only generate the path when X is first pressed down
+        /*
         if (gamepad1.xWasPressed()) {
             follower.followPath(launchPath.get(), true);
         }
@@ -320,14 +323,21 @@ public class CompetitionTeleOp extends OpMode {
         } else {
             // Start PedroPathing TeleOp just to set the motors back to brake mode
             // By no longer calling .update(), we can still use our own TeleOp code
-            follower.startTeleopDrive(true);
+            if (isAutoDriving) follower.startTeleopDrive(true);
             isAutoDriving = false;
         }
-
+        */
 
 
         // ....... LED LIGHT CODE .......
-        //indicatorLightCode();
+        if (isBlue) {
+            lightColor = LED_BLUE;
+        } else {
+            lightColor = LED_RED;
+        }
+        light1.setPosition(lightColor);
+        /*
+        indicatorLightCode();
 
         artifactColor = penguinsColorSensor.getSensedColor();
         switch (artifactColor) {
@@ -341,6 +351,7 @@ public class CompetitionTeleOp extends OpMode {
                 light1.setPosition(0.0);
                 break;
         }
+         */
 
 
         //telemetry.addData("Label", "Information");
@@ -391,7 +402,7 @@ public class CompetitionTeleOp extends OpMode {
         }
         // Set the follower's starting position based on the robot's current position, which is read from the Pinpoint
         pinpoint.update();
-        follower.setStartingPose(PoseConverter.pose2DToPose(pinpoint.getPosition(), PedroCoordinates.INSTANCE));
+        //follower.setStartingPose(PoseConverter.pose2DToPose(pinpoint.getPosition(), PedroCoordinates.INSTANCE));
     }
 
 

@@ -11,14 +11,15 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "12-GoalAutonomous", group = "Auto")
-public class GoalAutonomous12BallMaybe extends OpMode {
+@Autonomous(name = "6-GoalAutonomous", group = "Auto")
+public class GoalAutonomous6Ball extends OpMode {
 
     public Follower follower;
     private int pathState;
 
     ElapsedTime delayTimer = new ElapsedTime();
     ElapsedTime autoTimer = new ElapsedTime();
+    boolean shouldOpenGate = true;
     double delaySeconds = 0.0;
     final double AUTO_LENGTH_SECONDS = 30.0;
     final double AUTO_END_BUFFER_SECONDS = 1.0;
@@ -57,7 +58,7 @@ public class GoalAutonomous12BallMaybe extends OpMode {
 
         // Mirror coordinates across the x-Axis if the autonomous is run on the Red side
         if (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.RED_GOAL ||
-            LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.RED_WALL) {
+                LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.RED_WALL) {
             startPose = startPose.mirror();
             launchPose = LocationChooser.RED_LAUNCH_POSE;
             intake1ReadyPose = intake1ReadyPose.mirror();
@@ -98,7 +99,12 @@ public class GoalAutonomous12BallMaybe extends OpMode {
         if (gamepad1.dpadDownWasPressed()) {
             delaySeconds -= 0.5;
         }
+        // Choose whether or not to go for opening the gate
+        if (gamepad1.dpadRightWasPressed()) {
+            shouldOpenGate = !shouldOpenGate;
+        }
         telemetry.addData("Delay in seconds", delaySeconds);
+        telemetry.addData("Open Gate", shouldOpenGate);
         telemetry.addData("Location", LocationChooser.chosenStartingLocation);
         telemetry.update();
 
@@ -117,6 +123,9 @@ public class GoalAutonomous12BallMaybe extends OpMode {
         follower.update(); // Update Pedro Pathing - will also cause the robot to follow the current path
         penguinsLauncher.update();
         autonomousPathUpdate(); // Update autonomous state machine
+        telemetry.addData("IsBusy", follower.isBusy());
+        telemetry.addData("State", pathState);
+        telemetry.addData("Timer", delayTimer.seconds());
     }
 
     public void buildPaths() {
@@ -133,7 +142,7 @@ public class GoalAutonomous12BallMaybe extends OpMode {
                 .addPath(new BezierLine(  intake1ReadyPose, intake1FinishPose  ))
                 .setTangentHeadingInterpolation().build();
         hitLever1 = follower.pathBuilder()
-                .addPath(new BezierCurve(intake1FinishPose, hitLeverControlPoint, hitLeverPose))
+                .addPath(new BezierCurve(  intake1FinishPose, hitLeverControlPoint, hitLeverPose  ))
                 .setConstantHeadingInterpolation(hitLeverPose.getHeading())
                 .build();
 
@@ -222,109 +231,124 @@ public class GoalAutonomous12BallMaybe extends OpMode {
                 /* Let the intake sequence play out */
 
                 if (!follower.isBusy()) {
-                    follower.followPath(hitLever1);
-                    pathState = 5;
+                    if (shouldOpenGate) {
+                        follower.followPath(hitLever1);
+                        delayTimer.reset();
+                        pathState = 5;
+                    } else {
+                        pathState = 6;
+                    }
                 }
                 break;
             case 5:
+                /* Pause for the gate sequence */
+
+                // TODO: Fix bad coding - The delay should begin after the follower finishes moving the robot
+                if (!follower.isBusy() && delayTimer.seconds() > 3) {
+                    pathState = 6;
+                }
+                break;
+            case 6:
+                /* Let the robot open the gate, if it needs to */
+
                 if (!follower.isBusy()) {
                     // Stop the intake and drive back to launch position
                     penguinsLauncher.setIntakePower(0);
                     //penguinsLauncher.launcherPrepared = true;
                     penguinsLauncher.setLauncherVelocity(penguinsLauncher.velocityRpm);
                     follower.followPath(launchPath2, true);
-                    pathState = 6;
+                    pathState = 7;
                 }
                 break;
-            case 6:
+            case 7:
                 /* Let the robot get back to launch position */
 
                 if (!follower.isBusy()) {
                     // Begin the second launch sequence
                     penguinsLauncher.fireBalls(3, true);
-                    pathState = 7;
+                    pathState = 16; // Skip to the end because we only want to shoot 6 balls
                 }
                 break;
-            case 7:
-                /* Let the second launch sequence play out */
+//            case 8:
+//                /* Let the second launch sequence play out */
+//
+//                if (!penguinsLauncher.isBusy()) {
+//                    // Drive to the second line of balls
+//                    follower.followPath(intakePathReady2);
+//                    pathState = 9;
+//                }
+//                break;
+//            case 9:
+//                /* Let the robot get to the second line of balls */
+//
+//                if (!follower.isBusy()) {
+//                    // Intake the second line of balls
+//                    penguinsLauncher.setIntakePower(1);
+//                    follower.followPath(intakePath2, 0.4, true);
+//                    pathState = 10;
+//                }
+//                break;
+//            case 10:
+//                /* Let the intake sequence play out */
+//
+//                if (!follower.isBusy()) {
+//                    // Stop the intake and drive back to launch position
+//                    penguinsLauncher.setIntakePower(0);
+//                    //penguinsLauncher.launcherPrepared = true;
+//                    penguinsLauncher.setLauncherVelocity(penguinsLauncher.velocityRpm);
+//                    follower.followPath(launchPath3, true);
+//                    pathState = 11;
+//                }
+//                break;
+//            case 11:
+//                /* Let the robot get back to launch position */
+//
+//                if (!follower.isBusy()) {
+//                    // Begin the third launch sequence
+//                    penguinsLauncher.fireBalls(3, true);
+//                    pathState = 12;
+//                }
+//                break;
+//            case 12:
+//                /* Let the robot get to the third line of balls */
+//
+//                if (!penguinsLauncher.isBusy()) {
+//                    penguinsLauncher.setIntakePower(0);
+//                    follower.followPath(intakePathReady3, true);
+//                    pathState = 13;
+//                }
+//                break;
+//            case 13:
+//                /* Let the intake sequence play out */
+//
+//                if (!follower.isBusy()) {
+//                    penguinsLauncher.setIntakePower(1);
+//                    follower.followPath(intakePath3, 0.4, true);
+//                    pathState = 14;
+//                }
+//                break;
+//            case 14:
+//                if (!follower.isBusy()) {
+//                    penguinsLauncher.setIntakePower(0);
+//                    //penguinsLauncher.launcherPrepared = true;
+//                    penguinsLauncher.setLauncherVelocity(penguinsLauncher.velocityRpm);
+//                    follower.followPath(launchPath4, true);
+//                    pathState = 15;
+//                }
+//                break;
+//            case 15:
+//                if (!follower.isBusy()) {
+//                    penguinsLauncher.fireBalls(3, true);
+//                    pathState = 16;
+//                }
+//                break;
 
-                if (!penguinsLauncher.isBusy()) {
-                    // Drive to the second line of balls
-                    follower.followPath(intakePathReady2);
-                    pathState = 8;
-                }
-                break;
-            case 8:
-                /* Let the robot get to the second line of balls */
-
-                if (!follower.isBusy()) {
-                    // Intake the second line of balls
-                    penguinsLauncher.setIntakePower(1);
-                    follower.followPath(intakePath2, 0.4, true);
-                    pathState = 9;
-                }
-                break;
-            case 9:
-                /* Let the intake sequence play out */
-
-                if (!follower.isBusy()) {
-                    // Stop the intake and drive back to launch position
-                    penguinsLauncher.setIntakePower(0);
-                    //penguinsLauncher.launcherPrepared = true;
-                    penguinsLauncher.setLauncherVelocity(penguinsLauncher.velocityRpm);
-                    follower.followPath(launchPath3, true);
-                    pathState = 10;
-                }
-                break;
-            case 10:
-                /* Let the robot get back to launch position */
-
-                if (!follower.isBusy()) {
-                    // Begin the third launch sequence
-                    penguinsLauncher.fireBalls(3, true);
-                    pathState = 11;
-                }
-                break;
-            case 11:
-                /* Let the robot get to the third line of balls */
-
-                if (!penguinsLauncher.isBusy()) {
-                    penguinsLauncher.setIntakePower(0);
-                    follower.followPath(intakePathReady3, true);
-                    pathState = 12;
-                }
-                break;
-            case 12:
-                /* Let the intake sequence play out */
-
-                if (!follower.isBusy()) {
-                    penguinsLauncher.setIntakePower(1);
-                    follower.followPath(intakePath3, 0.4, true);
-                    pathState = 13;
-                }
-                break;
-            case 13:
-                if (!follower.isBusy()) {
-                    penguinsLauncher.setIntakePower(0);
-                    //penguinsLauncher.launcherPrepared = true;
-                    penguinsLauncher.setLauncherVelocity(penguinsLauncher.velocityRpm);
-                    follower.followPath(launchPath4, true);
-                    pathState = 14;
-                }
-                break;
-            case 14:
-                if (!follower.isBusy()) {
-                    penguinsLauncher.fireBalls(3, true);
-                    pathState = 15;
-                }
-                break;
-
-            case 15:
+            case 16:
                 /* Let the third launch sequence play out */
 
                 // If the launch sequence is finished, or autonomous is about to end, move sideways for the Leave points
                 if (autoTimer.seconds() > AUTO_LENGTH_SECONDS - AUTO_END_BUFFER_SECONDS
-                    || !penguinsLauncher.isBusy()) {
+                        || !penguinsLauncher.isBusy()) {
 
                     // Quit out of the state machine and move off of the Launch line
                     follower.followPath(leavePath, true);
