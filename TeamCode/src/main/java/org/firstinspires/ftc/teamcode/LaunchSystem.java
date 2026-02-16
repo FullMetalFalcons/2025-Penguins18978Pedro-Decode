@@ -33,15 +33,15 @@ public class LaunchSystem {
 
     // Static constants that can be tuned in Panels
     public static double FEEDER_DOWN = 0.37;
-    public static double FEEDER_UP = 0.47;
+    public static double FEEDER_UP = 0.48;
 
     public static double FLYWHEEL_F = 13.0;
     public static double FLYWHEEL_P = 200.0;
 
     public static double INTAKE_SECONDS = 0.3;
     public static double SPIN_UP_MIN_SECONDS = 0.3;
-    public static double SPIN_UP_MAX_SECONDS = 1.0;
-    public static double FEEDER_UP_SECONDS = 0.2;
+    public static double SPIN_UP_MAX_SECONDS = 3.0;
+    public static double FEEDER_UP_SECONDS = 0.25;
     public static double FOLLOW_THROUGH_SECONDS = 0.2;
 
 
@@ -53,7 +53,7 @@ public class LaunchSystem {
         --------  *  --------  *  ------
          Minute      Rotation     Second
      */
-    int velocityRpm = 2700;
+    int velocityRpm = 2900;
 
 
     /** Initializes motors, sets motor directions, and sets up PIDF constants for launch-related motors
@@ -110,7 +110,6 @@ public class LaunchSystem {
             case PREPARE:
                 // Wait for the flywheels to finish spinning up
                 // Also wait a mandatory pause to allow the ball to settle
-
                 if (((getFlywheelError(launchL) < 80 && getFlywheelError(launchR) < 80) || stateTimer.seconds() > SPIN_UP_MAX_SECONDS)
                                                                                         && stateTimer.seconds() > SPIN_UP_MIN_SECONDS) {
                     setState(LauncherState.LAUNCH);

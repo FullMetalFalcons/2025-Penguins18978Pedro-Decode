@@ -23,11 +23,11 @@ public class LocationChooser extends OpMode {
     public static final Pose RED_WALL_STARTING_POSE = BLUE_WALL_STARTING_POSE.mirror();
 
     // Define goal positions for Z-Targeting System
-    public static final Pose BLUE_GOAL_POSE = new Pose(10, 137);
+    public static final Pose BLUE_GOAL_POSE = new Pose(5, 139);
     public static final Pose RED_GOAL_POSE = BLUE_GOAL_POSE.mirror();
 
     // Define launch positions for Autonomous and TeleOp alignment
-    public static final Pose BLUE_LAUNCH_POSE = new Pose(38, 105, Math.toRadians(315));
+    public static final Pose BLUE_LAUNCH_POSE = new Pose(48, 96, Math.toRadians(315));
     public static final Pose RED_LAUNCH_POSE = BLUE_LAUNCH_POSE.mirror();
 
     public static StartingLocation chosenStartingLocation = StartingLocation.BLUE_GOAL;

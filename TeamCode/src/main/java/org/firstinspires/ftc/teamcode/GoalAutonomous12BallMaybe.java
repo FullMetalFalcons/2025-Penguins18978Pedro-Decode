@@ -123,7 +123,9 @@ public class GoalAutonomous12BallMaybe extends OpMode {
         // ....... Launch 1
         launchPath1 = follower.pathBuilder()
                 .addPath(new BezierLine(  startPose, launchPose  ))
-                .setLinearHeadingInterpolation(startPose.getHeading(), launchPose.getHeading()).build();
+                .setLinearHeadingInterpolation(startPose.getHeading(), launchPose.getHeading())
+                .setHeadingConstraint(0.002) // Default 0.007
+                .build();
 
         // ....... Intake 1
         intakePathReady1 = follower.pathBuilder()
@@ -140,7 +142,9 @@ public class GoalAutonomous12BallMaybe extends OpMode {
         // ....... Launch 2
         launchPath2 = follower.pathBuilder()
                 .addPath(new BezierLine(  intake1FinishPose, launchPose  ))
-                .setLinearHeadingInterpolation(intake1FinishPose.getHeading(), launchPose.getHeading()).build();
+                .setLinearHeadingInterpolation(intake1FinishPose.getHeading(), launchPose.getHeading())
+                .setHeadingConstraint(0.002)
+                .build();
 
         // ....... Intake 2
         intakePathReady2 = follower.pathBuilder()
@@ -153,7 +157,9 @@ public class GoalAutonomous12BallMaybe extends OpMode {
         // ....... Launch 3
         launchPath3 = follower.pathBuilder()
                 .addPath(new BezierCurve(  intake2FinishPose, launch3ControlPoint, launchPose  ))
-                .setLinearHeadingInterpolation(intake2FinishPose.getHeading(), launchPose.getHeading()).build();
+                .setLinearHeadingInterpolation(intake2FinishPose.getHeading(), launchPose.getHeading())
+                .setHeadingConstraint(0.002)
+                .build();
 
         // ....... Intake 3
         intakePathReady3 = follower.pathBuilder()

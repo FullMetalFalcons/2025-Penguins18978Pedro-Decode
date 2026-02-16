@@ -256,8 +256,6 @@ public class CompetitionTeleOp extends OpMode {
             } else {
                 penguinsLauncher.setLauncherVelocity(0);
             }
-            flywheelErrorL = penguinsLauncher.getFlywheelError(penguinsLauncher.launchL);
-            flywheelErrorR = penguinsLauncher.getFlywheelError(penguinsLauncher.launchR);
 
             // ....... VELOCITY MODIFICATION .......
             if (gamepad2.dpadUpWasPressed()) {
@@ -308,6 +306,8 @@ public class CompetitionTeleOp extends OpMode {
             penguinsLauncher.stopActions();
         }
         penguinsLauncher.update();
+        flywheelErrorL = penguinsLauncher.getFlywheelError(penguinsLauncher.launchL);
+        flywheelErrorR = penguinsLauncher.getFlywheelError(penguinsLauncher.launchR);
 
 
         // ....... PEDRO PATHING FOLLOWER CODE .......
