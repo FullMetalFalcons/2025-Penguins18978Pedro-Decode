@@ -30,14 +30,14 @@ public class GoalAutonomous12BallMaybe extends OpMode {
     private Pose startPose = new Pose(18, 113, 0);
     private Pose launchPose = LocationChooser.BLUE_LAUNCH_POSE;
 
-    private Pose intake1ControlPoint = new Pose(48, 104);
+    private Pose intake1ControlPoint = new Pose(72, 83);
     private Pose intake1ReadyPose =  new Pose(44, 84, Math.toRadians(180));
     private Pose intake1FinishPose = new Pose(18, 84, Math.toRadians(180));
 
-    private Pose hitLeverPose = new Pose(17, 75, Math.toRadians(180));
-    private Pose hitLeverControlPoint = new Pose(40, 80);
+    private Pose hitLeverPose = new Pose(17, 76, Math.toRadians(90));
+    private Pose hitLeverControlPoint = new Pose(25, 80);
 
-    private Pose intake2ControlPoint = new Pose(51, 107);
+    private Pose intake2ControlPoint = new Pose(71, 62);
     private Pose intake2ReadyPose =  new Pose(44, 60, Math.toRadians(180));
     private Pose intake2FinishPose = new Pose(18, 60, Math.toRadians(180));
 
@@ -47,7 +47,7 @@ public class GoalAutonomous12BallMaybe extends OpMode {
     private Pose intake3FinishPose = new Pose(18, 36, Math.toRadians(180));
 
     private Pose launch4ControlPoint = new Pose(55, 58);
-    private Pose leavePose = new Pose(45, 113, Math.toRadians(315));
+    private Pose leavePose = new Pose(56, 105, Math.toRadians(315));
 
     private PathChain launchPath1, intakePathReady1,intakePath1, launchPath2, intakePathReady2,intakePath2, launchPath3, intakePathReady3, intakePath3, launchPath4, leavePath, hitLever1;
 
@@ -210,6 +210,7 @@ public class GoalAutonomous12BallMaybe extends OpMode {
 
                 if (!penguinsLauncher.isBusy()) {
                     // drive to the first line of balls
+                    penguinsLauncher.setIntakePower(1);
                     follower.followPath(intakePathReady1);
                     pathState = 3;
                 }
@@ -219,7 +220,6 @@ public class GoalAutonomous12BallMaybe extends OpMode {
 
                 if (!follower.isBusy()) {
                     // Intake the first line of balls
-                    penguinsLauncher.setIntakePower(1);
                     follower.followPath(intakePath1, 0.4, true);
                     pathState = 4;
                 }
@@ -256,6 +256,7 @@ public class GoalAutonomous12BallMaybe extends OpMode {
 
                 if (!penguinsLauncher.isBusy()) {
                     // Drive to the second line of balls
+                    penguinsLauncher.setIntakePower(1);
                     follower.followPath(intakePathReady2);
                     pathState = 8;
                 }
@@ -265,7 +266,6 @@ public class GoalAutonomous12BallMaybe extends OpMode {
 
                 if (!follower.isBusy()) {
                     // Intake the second line of balls
-                    penguinsLauncher.setIntakePower(1);
                     follower.followPath(intakePath2, 0.4, true);
                     pathState = 9;
                 }
