@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
@@ -9,11 +10,8 @@ import com.bylazar.telemetry.TelemetryManager;
 import java.util.function.Supplier;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.PoseConverter;
-import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.HeadingInterpolator;
-import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -24,7 +22,6 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 
 import com.qualcomm.hardware.rev.RevColorSensorV3;
-import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 
 import java.text.DecimalFormat;
 
@@ -84,6 +81,9 @@ public class CompetitionTeleOp extends OpMode {
     public boolean isBlue;
     public boolean inPosition = false;
     public boolean inPositionPark = false;
+
+    Pose closestLaunchPose = LocationChooser.BLUE_LAUNCH_POSE;
+    final double LAUNCH_RADIUS = 60.0;
 
     ColorSystem.SensedColors artifactColor = ColorSystem.SensedColors.UNKNOWN;
 
@@ -220,16 +220,26 @@ public class CompetitionTeleOp extends OpMode {
         double powerForward = desiredForward;  // Assume field-centric is not being used
         double powerStrafe = desiredStrafe;    // Assume field-centric is not being used
 
+        // FIELD CENTRIC MODIFICATIONS AND TOGGLE CONTROL
         // Modify powers based on robot heading for field-centric drive
         if (fieldCentricInUse) {
             powerForward = (desiredForward * Math.cos(headingFieldCentric)) - (desiredStrafe * Math.sin(headingFieldCentric));
             powerStrafe = (desiredStrafe * Math.cos(headingFieldCentric)) + (desiredForward * Math.sin(headingFieldCentric));
         }
         // Be able to toggle field centric drive in case the Pinpoint fails somehow
-        if (gamepad1.startWasPressed()) {
+        if (gamepad1.backWasPressed()) {
             fieldCentricInUse = !fieldCentricInUse;
         }
 
+        // POWER OVERRIDES FOR DRIVING ASSIST FEATURES
+        // Override driving inputs for launch pose locking
+        if (gamepad1.xWasPressed()) closestLaunchPose = getClosestLaunchPose(); //closestLaunchPose = isBlue ? LocationChooser.BLUE_LAUNCH_POSE : LocationChooser.RED_LAUNCH_POSE;
+        if (gamepad1.x) {
+            desiredForward = (closestLaunchPose.getY() - robotY) / 24.0;
+            desiredStrafe = (closestLaunchPose.getX() - robotX) / 24.0;
+            powerForward = (desiredForward * Math.sin(headingRadians)) + (desiredStrafe * Math.cos(headingRadians));
+            powerStrafe = (desiredStrafe * Math.sin(headingRadians)) - (desiredForward * Math.cos(headingRadians));
+        }
         // Override angular power for Z-Target Drive
         if (gamepad1.a) {
             // Set target heading based on the goal and its position compared to the robot
@@ -237,9 +247,17 @@ public class CompetitionTeleOp extends OpMode {
             powerAngular = towardsGoalHeading.getDirection() * towardsGoalHeading.getError() / 30.0;
         }
 
+        // MOTOR SET POWER COMMANDS
         // Run the wheels using the desired powers
         if (!isAutoDriving) {
             mecanumDriveCode(powerForward, powerStrafe, powerAngular, 1.0);
+        }
+
+
+        // Emergency localization reset (drive to the far launch zone, intake away from the wall)
+        if (gamepad1.right_trigger > 0.5 && gamepad1.left_trigger > 0.5) {
+            pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, 72,9,
+                                            AngleUnit.DEGREES, 90));
         }
 
 
@@ -539,6 +557,42 @@ public class CompetitionTeleOp extends OpMode {
     /** Performs a mod operation that can only return positive results */
     public double modPositive(double number, double divisor) {
         return ((number % divisor) + divisor) % divisor;
+    }
+
+    /** Get the closest Pose to the robot that is a given number of inches away from the goal */
+    public Pose getClosestLaunchPose(double desiredRadius) {
+
+        // Find out how far the robot is from the goal along each axis
+        double differenceX = goalPose.getX() - robotX;
+        double differenceY = goalPose.getY() - robotY;
+
+        // If the robot is closer to the goal along the x axis then along the y axis, then it is almost out of the Launch Zone
+        // Thus, the robot should try to get to its predefined launch position, which is almost the last viable pose within the Launch Zone
+        // The math used here could (and probably should) be much more complex, but we don't need that much accuracy here, so it's fine
+        if (Math.abs(differenceX) < Math.abs(differenceY)) {
+            if (isBlue) {
+                return LocationChooser.BLUE_LAUNCH_POSE;
+            } else {
+                return  LocationChooser.RED_LAUNCH_POSE;
+            }
+        }
+
+        // Using the Pythagorean Theorem, calculate the robot's distance to the goal
+        double currentRadius = Math.sqrt((differenceX * differenceX) + (differenceY * differenceY));
+
+        // Using a rearranged version of the equation below, determine how the right triangle needs to be scaled to have the desired radius
+        // currentRadius * scaleFactor = launchRadius
+        double scaleFactor = desiredRadius / currentRadius;
+        differenceX *= scaleFactor;
+        differenceY *= scaleFactor;
+
+        // Return the pose that denotes where the robot is the desired distance from the goal
+        return new Pose(robotX + differenceX, robotY + differenceY);
+    }
+
+    /** Get the closes Pose to the robot that is <code>LAUNCH_RADIUS</code> inches away from the goal */
+    public Pose getClosestLaunchPose() {
+        return getClosestLaunchPose(LAUNCH_RADIUS);
     }
 
 

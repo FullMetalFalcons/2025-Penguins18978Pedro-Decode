@@ -32,21 +32,23 @@ public class GoalAutonomous extends OpMode {
     private Pose startPose = new Pose(16, 113, 0);
     private Pose launchPose = LocationChooser.BLUE_LAUNCH_POSE;
 
-    private Pose intake1ControlPoint = new Pose(48, 104);
+    private Pose intake1ControlPoint = new Pose(72, 83);
     private Pose intake1ReadyPose =  new Pose(44, 84, Math.toRadians(180));
     private Pose intake1FinishPose = new Pose(16, 84, Math.toRadians(180));
 
-    private Pose hitLeverPose = new Pose(17, 75, Math.toRadians(0));
-    private Pose hitLeverControlPoint = new Pose(40, 80);
+    private Pose hitLever1Pose = new Pose(17, 76, Math.toRadians(90));
+    private Pose hitLever1ControlPoint = new Pose(25, 80);
+    private Pose hitLever2Pose = new Pose(17, 67, Math.toRadians(270));
+    private Pose hitLever2ControlPoint = new Pose (30, 68);
 
-    private Pose intake2ControlPoint = new Pose(51, 107);
+    private Pose intake2ControlPoint = new Pose(71, 62);
     private Pose intake2ReadyPose =  new Pose(44, 60, Math.toRadians(180));
     private Pose intake2FinishPose = new Pose(16, 60, Math.toRadians(180));
 
     private Pose launch3ControlPoint = new Pose(55, 58);
-    private Pose leavePose = new Pose(45, 113, Math.toRadians(315));
+    private Pose leavePose = new Pose(56, 105, Math.toRadians(315));
 
-    private PathChain launchPath1, intakePathReady1,intakePath1, hitLever1, launchPath2, intakePathReady2,intakePath2, launchPath3, leavePath;
+    private PathChain launchPath1, intakePathReady1,intakePath1, hitLever1, launchPath2, intakePathReady2,intakePath2, hitLever2, launchPath3, leavePath;
 
 
     @Override
@@ -60,8 +62,10 @@ public class GoalAutonomous extends OpMode {
             intake1ReadyPose = intake1ReadyPose.mirror();
             intake1ControlPoint = intake1ControlPoint.mirror();
             intake1FinishPose = intake1FinishPose.mirror();
-            hitLeverPose = hitLeverPose.mirror();
-            hitLeverControlPoint = hitLeverControlPoint.mirror();
+            hitLever1Pose = hitLever1Pose.mirror();
+            hitLever1ControlPoint = hitLever1ControlPoint.mirror();
+            hitLever2Pose = hitLever2Pose.mirror();
+            hitLever2ControlPoint = hitLever2ControlPoint.mirror();
             intake2ReadyPose = intake2ReadyPose.mirror();
             intake2ControlPoint = intake2ControlPoint.mirror();
             intake2FinishPose = intake2FinishPose.mirror();
@@ -131,8 +135,8 @@ public class GoalAutonomous extends OpMode {
                 .addPath(new BezierLine(  intake1ReadyPose, intake1FinishPose  ))
                 .setTangentHeadingInterpolation().build();
         hitLever1 = follower.pathBuilder()
-                .addPath(new BezierCurve(  intake1FinishPose, hitLeverControlPoint, hitLeverPose  ))
-                .setConstantHeadingInterpolation(hitLeverPose.getHeading())
+                .addPath(new BezierCurve(  intake1FinishPose, hitLever1ControlPoint, hitLever1Pose  ))
+                .setConstantHeadingInterpolation(hitLever1Pose.getHeading())
                 .build();
 
         // ....... Launch 2
@@ -147,6 +151,10 @@ public class GoalAutonomous extends OpMode {
         intakePath2 = follower.pathBuilder()
                 .addPath(new BezierLine(  intake2ReadyPose, intake2FinishPose  ))
                 .setTangentHeadingInterpolation().build();
+        hitLever2 = follower.pathBuilder()
+                .addPath(new BezierCurve( intake2FinishPose, hitLever2ControlPoint, hitLever2Pose ))
+                .setLinearHeadingInterpolation(intake2FinishPose.getHeading(), hitLever2Pose.getHeading())
+                .build();
 
         // ....... Launch 3
         launchPath3 = follower.pathBuilder()
@@ -222,14 +230,10 @@ public class GoalAutonomous extends OpMode {
                 }
                 break;
             case 6:
-                /* Let the intake sequence play out */
-
-                if (!follower.isBusy()) {
-                    // Stop the intake and drive back to launch position
-                    penguinsLauncher.setIntakePower(0);
-                    follower.followPath(launchPath2, true);
-                    pathState = 7;
-                }
+                // Stop the intake and drive back to launch position
+                penguinsLauncher.setIntakePower(0);
+                follower.followPath(launchPath2, true);
+                pathState = 7;
                 break;
             case 7:
                 /* Let the robot get back to launch position */
@@ -263,22 +267,39 @@ public class GoalAutonomous extends OpMode {
                 /* Let the intake sequence play out */
 
                 if (!follower.isBusy()) {
-                    // Stop the intake and drive back to launch position
-                    penguinsLauncher.setIntakePower(0);
-                    follower.followPath(launchPath3, true);
-                    pathState = 11;
+                    if (shouldOpenGate) {
+                        follower.followPath(hitLever2, 0.8, true);
+                        delayTimer.reset();
+                        pathState = 11;
+                    } else {
+                        pathState = 12;
+                    }
                 }
                 break;
             case 11:
+                /* Pause for the gate sequence */
+
+                // TODO: Fix bad coding - The delay should begin after the follower finishes moving the robot
+                if (!follower.isBusy() && delayTimer.seconds() > 3) {
+                    pathState = 12;
+                }
+                break;
+            case 12:
+                // Stop the intake and drive back to launch position
+                penguinsLauncher.setIntakePower(0);
+                follower.followPath(launchPath3, true);
+                pathState = 13;
+                break;
+            case 13:
                 /* Let the robot get back to launch position */
 
                 if (!follower.isBusy()) {
                     // Begin the third launch sequence
                     penguinsLauncher.fireBalls(3);
-                    pathState = 12;
+                    pathState = 14;
                 }
                 break;
-            case 12:
+            case 14:
                 /* Let the third launch sequence play out */
 
                 // If the launch sequence is finished, or autonomous is about to end, move sideways for the Leave points
