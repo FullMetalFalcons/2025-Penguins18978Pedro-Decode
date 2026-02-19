@@ -11,7 +11,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "WallAutonomous", group = "Auto")
+@Autonomous(name = "Far-Side Wall Autonomous", group = "Auto")
 public class WallAutonomous extends OpMode {
 
     public Follower follower;
@@ -28,13 +28,13 @@ public class WallAutonomous extends OpMode {
 
     // Define important coordinate locations for the Blue side of the field
     private Pose startPose = new Pose(56, 9, 0);
-    private Pose launchPose = new Pose(56, 20, Math.toRadians(295));
+    private Pose launchPose = new Pose(50, 14, Math.toRadians(290));
 
     private Pose intake1ControlPoint = new Pose(57, 38);
     private Pose intake1ReadyPose =  new Pose(42, 36, Math.toRadians(180));
     private Pose intake1FinishPose = new Pose(16, 36, Math.toRadians(180));
 
-    private Pose leavePose = new Pose(43, 20, Math.toRadians(295));
+    private Pose leavePose = new Pose(43, 20, Math.toRadians(290));
 
     private PathChain launchPath1, intakePathReady1,intakePath1, launchPath2, leavePath;
 
@@ -87,8 +87,7 @@ public class WallAutonomous extends OpMode {
         // Reset any timers
         delayTimer.reset();
         autoTimer.reset();
-
-        penguinsLauncher.setTargetVelocity(3500);
+        penguinsLauncher.setTargetVelocity(3300);
 
     }
 

@@ -11,7 +11,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "6-GoalAutonomous", group = "Auto")
+@Autonomous(name = "6-GoalAuto", group = "Auto")
 public class GoalAutonomous6Ball extends OpMode {
 
     public Follower follower;

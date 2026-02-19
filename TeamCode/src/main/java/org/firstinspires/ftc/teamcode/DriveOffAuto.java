@@ -12,7 +12,7 @@ import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "LeaveAutonomous", group = "Auto")
+@Autonomous(name = "Leave Autonomous", group = "Auto")
 public class DriveOffAuto extends LinearOpMode {
 
     // NOTE: The following method call is a way to "press STOP" via code:    requestOpModeStop()
@@ -81,15 +81,12 @@ public class DriveOffAuto extends LinearOpMode {
             if (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.BLUE_GOAL) {
                 // Strafe diagonally left
                 mecanumDriveCode(1, -1, 0);
-            } else if (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.BLUE_WALL) {
-                // Strafe straight left
-                mecanumDriveCode(0, -1, 0);
             } else if (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.RED_GOAL) {
                 // Strafe diagonally right
                 mecanumDriveCode(1, 1, 0);
             } else {
-                // Strafe straight right
-                mecanumDriveCode(0, 1, 0);
+                // Drive straight back
+                mecanumDriveCode(-1, 0, 0);
             }
 
             // Wait to let the robot run
