@@ -54,11 +54,9 @@ public class LaunchSystem {
         --------  *  --------  *  ------
          Minute      Rotation     Second
      */
-    int velocityRpm = 2700;
-
-    public void setLauncherVelocity(LinearCalc linearCalc) {
-        velocityRpm = linearCalc.calc();
-    }
+    final int CLOSE_LAUNCH_VELOCITY = 2700;
+    final int FAR_LAUNCH_VELOCITY = 3300;
+    int velocityRpm = CLOSE_LAUNCH_VELOCITY;
 
 
     /** Initializes motors, sets motor directions, and sets up PIDF constants for launch-related motors
@@ -228,6 +226,9 @@ public class LaunchSystem {
     public void setTargetVelocity(int velocity) {
         velocityRpm = velocity;
     }
+    /** Set the target launch velocity based on the robot's distance from the goal. Does not activate any motors: Only stores the value for future use
+     * @param linearCalc an instance of the LinearCalc class created using the robot's current position and alliance color */
+    public void setTargetVelocity(LinearCalc linearCalc) { setTargetVelocity(linearCalc.calc()); }
     /** Modify the target launch velocity in rotations per minute. Does not activate any motors: Only stores the value for future use */
     public void changeTargetVelocity(int addition) {
         velocityRpm += addition;

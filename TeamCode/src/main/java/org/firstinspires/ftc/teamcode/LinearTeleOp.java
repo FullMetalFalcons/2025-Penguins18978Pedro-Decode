@@ -264,10 +264,13 @@ public class LinearTeleOp extends OpMode {
 
         if (!penguinsLauncher.isBusy()) {
 
+            // Set the launcher velocity proportional to the robot's distance from the goal
+            penguinsLauncher.setTargetVelocity(new LinearCalc(robotX, robotY, isBlue));
+
             // ....... FLYWHEEL CONTROLS .......
             if (gamepad2.right_trigger > 0.5) {
                 // Launch balls
-                    penguinsLauncher.setLauncherVelocity(new LinearCalc(robotX, robotY, isBlue));
+                penguinsLauncher.setLauncherVelocity(penguinsLauncher.velocityRpm);
             } else if (gamepad2.left_trigger > 0.5) {
                 // Reverse wheels to bring balls back in if necessary
                 penguinsLauncher.setLauncherVelocity(-2500);

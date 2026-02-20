@@ -84,6 +84,8 @@ public class CompetitionTeleOp extends OpMode {
 
     Pose closestLaunchPose = LocationChooser.BLUE_LAUNCH_POSE;
     final double LAUNCH_RADIUS = 60.0;
+    boolean isClose;
+    boolean lastIsClose;
 
     ColorSystem.SensedColors artifactColor = ColorSystem.SensedColors.UNKNOWN;
 
@@ -254,8 +256,8 @@ public class CompetitionTeleOp extends OpMode {
         }
 
 
-        // Emergency localization reset (drive to the far launch zone, intake away from the wall)
-        if (gamepad1.right_trigger > 0.5 && gamepad1.left_trigger > 0.5) {
+        // Emergency localization reset (drive to the far launch zone, face intake away from the wall)
+        if (gamepad1.right_trigger_pressed && gamepad1.left_trigger_pressed) {
             pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, 72,9,
                                             AngleUnit.DEGREES, 90));
         }
@@ -276,11 +278,31 @@ public class CompetitionTeleOp extends OpMode {
             }
 
             // ....... VELOCITY MODIFICATION .......
-            if (gamepad2.dpadUpWasPressed()) {
+            if (gamepad2.dpadRightWasPressed()) {
                 penguinsLauncher.changeTargetVelocity(50);
-            } else if (gamepad2.dpadDownWasPressed()) {
+            } else if (gamepad2.dpadLeftWasPressed()) {
                 penguinsLauncher.changeTargetVelocity(-50);
             }
+
+            // Automatically set the launcher velocity based on the robot's position on the field
+            // y = 72 is the center of the field, in the Pedro Pathing Coordinate System
+            //   To allow modifications if necessary, the velocity is only changed when the robot crosses the center line (edge detection)
+            if (robotY > 72) {
+                // Robot is close to the goal
+                if (!lastIsClose) {
+                    penguinsLauncher.setTargetVelocity(penguinsLauncher.CLOSE_LAUNCH_VELOCITY);
+                    isClose = true;
+                }
+            } else {
+                // Robot is far from the goal
+                if (lastIsClose) {
+                    penguinsLauncher.setTargetVelocity(penguinsLauncher.FAR_LAUNCH_VELOCITY);
+                    isClose = false;
+                }
+            }
+            lastIsClose = isClose;
+            //if (gamepad2.dpadUpWasPressed()) { penguinsLauncher.setTargetVelocity(penguinsLauncher.FAR_LAUNCH_VELOCITY); }
+            //if (gamepad2.dpadDownWasPressed()) { penguinsLauncher.setTargetVelocity(penguinsLauncher.CLOSE_LAUNCH_VELOCITY); }
             telemetryM.addLine("Wheel Velocity: " + penguinsLauncher.velocityRpm + " RPM");
 
 
@@ -348,10 +370,15 @@ public class CompetitionTeleOp extends OpMode {
 
 
         // ....... LED LIGHT CODE .......
-        if (isBlue) {
+        /*if (isBlue) {
             lightColor = LED_BLUE;
         } else {
             lightColor = LED_RED;
+        }*/
+        if (penguinsLauncher.velocityRpm < penguinsLauncher.FAR_LAUNCH_VELOCITY) {
+            lightColor = LED_YELLOW;
+        } else {
+            lightColor = LED_GREEN;
         }
         light1.setPosition(lightColor);
         /*
@@ -394,12 +421,12 @@ public class CompetitionTeleOp extends OpMode {
     public void setLocationSpecificInformation() {
 
         // Set the alliance color (for the LED light)
-        if (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.BLUE_GOAL ||
-                LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.BLUE_WALL) {
-            isBlue = true;
-        } else {
-            isBlue = false;
-        }
+        isBlue = (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.BLUE_GOAL ||
+                LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.BLUE_WALL);
+
+        isClose = (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.BLUE_GOAL ||
+                LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.RED_GOAL);
+        lastIsClose = isClose;
 
         // Import robot starting location from the Location Chooser, unless B is pressed (override for practice)
         if (gamepad1.b) {
@@ -565,6 +592,9 @@ public class CompetitionTeleOp extends OpMode {
         // Find out how far the robot is from the goal along each axis
         double differenceX = goalPose.getX() - robotX;
         double differenceY = goalPose.getY() - robotY;
+
+        telemetry.addData("DeltaX", formatter.format( differenceX ));
+        telemetry.addData("DeltaY", formatter.format( differenceY ));
 
         // If the robot is closer to the goal along the x axis then along the y axis, then it is almost out of the Launch Zone
         // Thus, the robot should try to get to its predefined launch position, which is almost the last viable pose within the Launch Zone
