@@ -23,6 +23,7 @@ public class LaunchSystem {
     boolean launcherPrepared = false;
     int ballsToFire = 0;
 
+
     public enum LauncherState {
         IDLE,
         LOAD,
@@ -54,6 +55,10 @@ public class LaunchSystem {
          Minute      Rotation     Second
      */
     int velocityRpm = 2700;
+
+    public void setLauncherVelocity(LinearCalc linearCalc) {
+        velocityRpm = linearCalc.calc();
+    }
 
 
     /** Initializes motors, sets motor directions, and sets up PIDF constants for launch-related motors
