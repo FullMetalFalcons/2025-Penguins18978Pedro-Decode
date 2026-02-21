@@ -299,8 +299,8 @@ public class CompetitionTeleOp extends OpMode {
                     isClose = false;
                 }
             }
-            //if (gamepad2.dpadUpWasPressed()) { penguinsLauncher.setTargetVelocity(penguinsLauncher.FAR_LAUNCH_VELOCITY); }
-            //if (gamepad2.dpadDownWasPressed()) { penguinsLauncher.setTargetVelocity(penguinsLauncher.CLOSE_LAUNCH_VELOCITY); }
+            if (gamepad2.dpadUpWasPressed()) { penguinsLauncher.setTargetVelocity(penguinsLauncher.FAR_LAUNCH_VELOCITY); }
+            if (gamepad2.dpadDownWasPressed()) { penguinsLauncher.setTargetVelocity(penguinsLauncher.CLOSE_LAUNCH_VELOCITY); }
             telemetryM.addLine("Wheel Velocity: " + penguinsLauncher.velocityRpm + " RPM");
 
 
