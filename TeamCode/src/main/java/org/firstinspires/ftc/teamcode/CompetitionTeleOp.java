@@ -85,7 +85,6 @@ public class CompetitionTeleOp extends OpMode {
     Pose closestLaunchPose = LocationChooser.BLUE_LAUNCH_POSE;
     final double LAUNCH_RADIUS = 60.0;
     boolean isClose;
-    boolean lastIsClose;
 
     ColorSystem.SensedColors artifactColor = ColorSystem.SensedColors.UNKNOWN;
 
@@ -289,20 +288,19 @@ public class CompetitionTeleOp extends OpMode {
             //   To allow modifications if necessary, the velocity is only changed when the robot crosses the center line (edge detection)
             if (robotY > 72) {
                 // Robot is close to the goal
-                if (!lastIsClose) {
+                if (!isClose) {
                     penguinsLauncher.setTargetVelocity(penguinsLauncher.CLOSE_LAUNCH_VELOCITY);
                     isClose = true;
                 }
             } else {
                 // Robot is far from the goal
-                if (lastIsClose) {
+                if (isClose) {
                     penguinsLauncher.setTargetVelocity(penguinsLauncher.FAR_LAUNCH_VELOCITY);
                     isClose = false;
                 }
             }
-            lastIsClose = isClose;
-            //if (gamepad2.dpadUpWasPressed()) { penguinsLauncher.setTargetVelocity(penguinsLauncher.FAR_LAUNCH_VELOCITY); }
-            //if (gamepad2.dpadDownWasPressed()) { penguinsLauncher.setTargetVelocity(penguinsLauncher.CLOSE_LAUNCH_VELOCITY); }
+            if (gamepad2.dpadUpWasPressed()) { penguinsLauncher.setTargetVelocity(penguinsLauncher.FAR_LAUNCH_VELOCITY); }
+            if (gamepad2.dpadDownWasPressed()) { penguinsLauncher.setTargetVelocity(penguinsLauncher.CLOSE_LAUNCH_VELOCITY); }
             telemetryM.addLine("Wheel Velocity: " + penguinsLauncher.velocityRpm + " RPM");
 
 
@@ -426,7 +424,6 @@ public class CompetitionTeleOp extends OpMode {
 
         isClose = (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.BLUE_GOAL ||
                 LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.RED_GOAL);
-        lastIsClose = isClose;
 
         // Import robot starting location from the Location Chooser, unless B is pressed (override for practice)
         if (gamepad1.b) {
@@ -603,7 +600,7 @@ public class CompetitionTeleOp extends OpMode {
             if (isBlue) {
                 return LocationChooser.BLUE_LAUNCH_POSE;
             } else {
-                return  LocationChooser.RED_LAUNCH_POSE;
+                return LocationChooser.RED_LAUNCH_POSE;
             }
         }
 
@@ -611,13 +608,13 @@ public class CompetitionTeleOp extends OpMode {
         double currentRadius = Math.sqrt((differenceX * differenceX) + (differenceY * differenceY));
 
         // Using a rearranged version of the equation below, determine how the right triangle needs to be scaled to have the desired radius
-        // currentRadius * scaleFactor = launchRadius
+        // currentRadius * scaleFactor = desiredRadius
         double scaleFactor = desiredRadius / currentRadius;
         differenceX *= scaleFactor;
         differenceY *= scaleFactor;
 
         // Return the pose that denotes where the robot is the desired distance from the goal
-        return new Pose(robotX + differenceX, robotY + differenceY);
+        return new Pose(goalPose.getX() - differenceX, goalPose.getY() - differenceY);
     }
 
     /** Get the closes Pose to the robot that is <code>LAUNCH_RADIUS</code> inches away from the goal */

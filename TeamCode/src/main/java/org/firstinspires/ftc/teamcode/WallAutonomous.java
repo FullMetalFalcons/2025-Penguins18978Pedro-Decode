@@ -96,7 +96,7 @@ public class WallAutonomous extends OpMode {
         // Reset any timers
         delayTimer.reset();
         autoTimer.reset();
-        penguinsLauncher.setTargetVelocity(3300);
+        penguinsLauncher.setTargetVelocity(penguinsLauncher.FAR_LAUNCH_VELOCITY);
 
     }
 
