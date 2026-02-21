@@ -72,9 +72,10 @@ public class CompetitionTeleOp extends OpMode {
 
     // Set Indicator Light constants
     public final double LED_RED = 0.279;
-    public final double LED_BLUE = 0.611;
-    public final double LED_GREEN = 0.5;
+    public final double LED_ORANGE = 0.333;
     public final double LED_YELLOW = 0.38;
+    public final double LED_GREEN = 0.5;
+    public final double LED_BLUE = 0.611;
     public final double LED_PURPLE = 0.7;
 
     double lightColor;
@@ -85,6 +86,9 @@ public class CompetitionTeleOp extends OpMode {
     Pose closestLaunchPose = LocationChooser.BLUE_LAUNCH_POSE;
     final double LAUNCH_RADIUS = 60.0;
     boolean isClose;
+
+    int loopsSincePoseReset = 0;
+    double poseResetColor = 0.0;
 
     ColorSystem.SensedColors artifactColor = ColorSystem.SensedColors.UNKNOWN;
 
@@ -256,10 +260,19 @@ public class CompetitionTeleOp extends OpMode {
 
 
         // Emergency localization reset (drive to the far launch zone, face intake away from the wall)
-        if (gamepad1.right_trigger_pressed && gamepad1.left_trigger_pressed) {
+        if (gamepad1.rightTriggerWasPressed()) {
             pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, 72,9,
                                             AngleUnit.DEGREES, 90));
+            loopsSincePoseReset = 0;
+            poseResetColor = LED_RED;
+        }  //                           (drive to the center of the field, face intake towards the obelisk)
+        if (gamepad1.leftTriggerWasPressed()) {
+            pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, 72, 72,
+                                            AngleUnit.DEGREES, 90));
+            loopsSincePoseReset = 0;
+            poseResetColor = LED_ORANGE;
         }
+        loopsSincePoseReset ++;
 
 
 
@@ -275,34 +288,6 @@ public class CompetitionTeleOp extends OpMode {
             } else {
                 penguinsLauncher.setLauncherVelocity(0);
             }
-
-            // ....... VELOCITY MODIFICATION .......
-            if (gamepad2.dpadRightWasPressed()) {
-                penguinsLauncher.changeTargetVelocity(50);
-            } else if (gamepad2.dpadLeftWasPressed()) {
-                penguinsLauncher.changeTargetVelocity(-50);
-            }
-
-            // Automatically set the launcher velocity based on the robot's position on the field
-            // y = 72 is the center of the field, in the Pedro Pathing Coordinate System
-            //   To allow modifications if necessary, the velocity is only changed when the robot crosses the center line (edge detection)
-            if (robotY > 72) {
-                // Robot is close to the goal
-                if (!isClose) {
-                    penguinsLauncher.setTargetVelocity(penguinsLauncher.CLOSE_LAUNCH_VELOCITY);
-                    isClose = true;
-                }
-            } else {
-                // Robot is far from the goal
-                if (isClose) {
-                    penguinsLauncher.setTargetVelocity(penguinsLauncher.FAR_LAUNCH_VELOCITY);
-                    isClose = false;
-                }
-            }
-            if (gamepad2.dpadUpWasPressed()) { penguinsLauncher.setTargetVelocity(penguinsLauncher.FAR_LAUNCH_VELOCITY); }
-            if (gamepad2.dpadDownWasPressed()) { penguinsLauncher.setTargetVelocity(penguinsLauncher.CLOSE_LAUNCH_VELOCITY); }
-            telemetryM.addLine("Wheel Velocity: " + penguinsLauncher.velocityRpm + " RPM");
-
 
             // ....... INTAKE CONTROLS .......
             if (gamepad1.rightBumperWasPressed()) {
@@ -329,6 +314,34 @@ public class CompetitionTeleOp extends OpMode {
             }
 
         }
+
+        // ....... VELOCITY MODIFICATION .......
+        if (gamepad2.dpadRightWasPressed()) {
+            penguinsLauncher.changeTargetVelocity(50);
+        } else if (gamepad2.dpadLeftWasPressed()) {
+            penguinsLauncher.changeTargetVelocity(-50);
+        }
+
+        // Automatically set the launcher velocity based on the robot's position on the field
+        // y = 72 is the center of the field, in the Pedro Pathing Coordinate System
+        //   To allow modifications if necessary, the velocity is only changed when the robot crosses the center line (edge detection)
+        if (robotY > 72) {
+            // Robot is close to the goal
+            if (!isClose) {
+                penguinsLauncher.setTargetVelocity(penguinsLauncher.CLOSE_LAUNCH_VELOCITY);
+                isClose = true;
+            }
+        } else {
+            // Robot is far from the goal
+            if (isClose) {
+                penguinsLauncher.setTargetVelocity(penguinsLauncher.FAR_LAUNCH_VELOCITY);
+                isClose = false;
+            }
+        }
+        if (gamepad2.dpadUpWasPressed()) { penguinsLauncher.setTargetVelocity(penguinsLauncher.FAR_LAUNCH_VELOCITY); }
+        if (gamepad2.dpadDownWasPressed()) { penguinsLauncher.setTargetVelocity(penguinsLauncher.CLOSE_LAUNCH_VELOCITY); }
+        telemetryM.addLine("Wheel Velocity: " + penguinsLauncher.velocityRpm + " RPM");
+
 
         // ....... LAUNCH SEQUENCE MACROS .......
         if (gamepad2.yWasPressed()) {
@@ -373,10 +386,14 @@ public class CompetitionTeleOp extends OpMode {
         } else {
             lightColor = LED_RED;
         }*/
-        if (penguinsLauncher.velocityRpm < penguinsLauncher.FAR_LAUNCH_VELOCITY) {
-            lightColor = LED_YELLOW;
+        if (loopsSincePoseReset < 5) {
+            lightColor = poseResetColor;
         } else {
-            lightColor = LED_GREEN;
+            if (penguinsLauncher.velocityRpm < penguinsLauncher.FAR_LAUNCH_VELOCITY) {
+                lightColor = LED_YELLOW;
+            } else {
+                lightColor = LED_GREEN;
+            }
         }
         light1.setPosition(lightColor);
         /*
@@ -605,7 +622,8 @@ public class CompetitionTeleOp extends OpMode {
         }
 
         // Using the Pythagorean Theorem, calculate the robot's distance to the goal
-        double currentRadius = Math.sqrt((differenceX * differenceX) + (differenceY * differenceY));
+        double currentRadius = Math.hypot(differenceX, differenceY);
+        //double currentRadius = Math.sqrt((differenceX * differenceX) + (differenceY * differenceY));
 
         // Using a rearranged version of the equation below, determine how the right triangle needs to be scaled to have the desired radius
         // currentRadius * scaleFactor = desiredRadius
