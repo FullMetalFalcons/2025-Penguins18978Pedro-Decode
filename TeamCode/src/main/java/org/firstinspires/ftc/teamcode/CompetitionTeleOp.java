@@ -356,6 +356,10 @@ public class CompetitionTeleOp extends OpMode {
             // Emergency stop button to quit out of launching balls
             penguinsLauncher.stopActions();
         }
+        if (gamepad1.yWasPressed()) {
+            // Single gamepad can launch balls cause im the only one at nepe - ethan
+            penguinsLauncher.fireBalls(1);
+        }
         penguinsLauncher.update();
         flywheelErrorL = penguinsLauncher.getFlywheelError(penguinsLauncher.launchL);
         flywheelErrorR = penguinsLauncher.getFlywheelError(penguinsLauncher.launchR);

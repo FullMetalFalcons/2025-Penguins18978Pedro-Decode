@@ -11,8 +11,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "12-GoalAuto", group = "Auto")
-public class GoalAutonomous12BallMaybe extends OpMode {
+@Autonomous(name = "LeaveClose", group = "Auto")
+public class LeaveClose extends OpMode {
 
     public Follower follower;
     private int pathState;
@@ -50,8 +50,9 @@ public class GoalAutonomous12BallMaybe extends OpMode {
 
     private Pose launch4ControlPoint = new Pose(55, 58);
     private Pose leavePose = new Pose(56, 105, Math.toRadians(315));
+    private Pose leaveBetter = new Pose(18,113, Math.toRadians(0));
 
-    private PathChain launchPath1, intakePathReady1,intakePath1, launchPath2, intakePathReady2,intakePath2, launchPath3, intakePathReady3, intakePath3, launchPath4, leavePath, hitLever1, goToDeclan;
+    private PathChain launchPath1, intakePathReady1,intakePath1, launchPath2, intakePathReady2,intakePath2, launchPath3, intakePathReady3, intakePath3, launchPath4, leavePath, hitLever1, goToDeclan, leaveBetterPath;
 
 
     @Override
@@ -59,7 +60,7 @@ public class GoalAutonomous12BallMaybe extends OpMode {
 
         // Mirror coordinates across the x-Axis if the autonomous is run on the Red side
         if (LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.RED_GOAL ||
-            LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.RED_WALL) {
+                LocationChooser.chosenStartingLocation == LocationChooser.StartingLocation.RED_WALL) {
             startPose = startPose.mirror();
             launchPose = LocationChooser.RED_LAUNCH_POSE;
             intake1ReadyPose = intake1ReadyPose.mirror();
@@ -76,6 +77,7 @@ public class GoalAutonomous12BallMaybe extends OpMode {
             launch4ControlPoint = launch4ControlPoint.mirror();
             leavePose = leavePose.mirror();
             declanControlPoint = declanControlPoint.mirror();
+            leaveBetter = leaveBetter.mirror();
         }
 
         follower = Constants.createFollower(hardwareMap); // Make sure you create the follower before building paths
@@ -189,6 +191,11 @@ public class GoalAutonomous12BallMaybe extends OpMode {
                 .addPath(new BezierLine(  launchPose, leavePose  ))
                 .setConstantHeadingInterpolation(leavePose.getHeading())
                 .build();
+
+        leaveBetterPath = follower.pathBuilder()
+                .addPath(new BezierCurve( startPose, leaveBetter))
+                .setLinearHeadingInterpolation(startPose.getHeading(), leaveBetter.getHeading())
+                .build();
     }
 
     public void autonomousPathUpdate() {
@@ -198,9 +205,8 @@ public class GoalAutonomous12BallMaybe extends OpMode {
             case 0:
                 // Wait for the starting delay to expire
                 if (delayTimer.seconds() > delaySeconds) {
-                    // Begin the whole route
-                    follower.followPath(launchPath1, true);
-                    pathState = 1;
+                    follower.followPath(leaveBetterPath, true);
+                    pathState = -1;
                 }
                 break;
             case 1:
@@ -343,7 +349,7 @@ public class GoalAutonomous12BallMaybe extends OpMode {
 
                 // If the launch sequence is finished, or autonomous is about to end, move sideways for the Leave points
                 if (autoTimer.seconds() > AUTO_LENGTH_SECONDS - AUTO_END_BUFFER_SECONDS
-                    || !penguinsLauncher.isBusy()) {
+                        || !penguinsLauncher.isBusy()) {
 
                     // Quit out of the state machine and move off of the Launch line
                     follower.followPath(leavePath, true);

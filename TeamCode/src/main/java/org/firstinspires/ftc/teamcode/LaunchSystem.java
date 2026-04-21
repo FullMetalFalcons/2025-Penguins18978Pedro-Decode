@@ -39,11 +39,11 @@ public class LaunchSystem {
     public static double FLYWHEEL_F = 13.0;
     public static double FLYWHEEL_P = 200.0;
 
-    public static double INTAKE_SECONDS = 0.3;
+    public static double INTAKE_SECONDS = 0.2;
     public static double SPIN_UP_MIN_SECONDS = 0.3;
     public static double SPIN_UP_MAX_SECONDS = 3.0;
-    public static double FEEDER_UP_SECONDS = 0.25;
-    public static double FOLLOW_THROUGH_SECONDS = 0.2;
+    public static double FEEDER_UP_SECONDS = 0.2;
+    public static double FOLLOW_THROUGH_SECONDS = 0.3;
 
 
     // Unit conversion constants

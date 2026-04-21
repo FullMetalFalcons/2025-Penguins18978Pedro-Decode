@@ -27,7 +27,7 @@ public class LocationChooser extends OpMode {
     public static final Pose RED_GOAL_POSE = BLUE_GOAL_POSE.mirror();
 
     // Define launch positions for Autonomous and TeleOp alignment
-    public static final Pose BLUE_LAUNCH_POSE = new Pose(48, 96, Math.toRadians(315));
+    public static final Pose BLUE_LAUNCH_POSE = new Pose(48, 96, Math.toRadians(135));
     public static final Pose RED_LAUNCH_POSE = BLUE_LAUNCH_POSE.mirror();
 
     public static StartingLocation chosenStartingLocation = StartingLocation.BLUE_GOAL;
